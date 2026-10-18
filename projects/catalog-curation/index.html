@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catalogue curation | Raghvendra Rao Koduri</title>
+  <meta name="description" content="Can a model file a messy product listing on the right shelf? Five parts on 25,022 real Shopify products: data curation, an LLM rewrite, classic baselines, neural networks and LLMs with no training. Fine-tuning is next.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Catalogue curation: filing real product listings into 141 categories">
+  <meta property="og:description" content="From data cleaning to neural networks and LLMs, measured on 25,022 real Shopify products.">
+  <meta property="og:url" content="https://raghvendra-rao-koduri.vercel.app/projects/catalog-curation/">
+  <meta property="og:image" content="https://raghvendra-rao-koduri.vercel.app/assets/catalog-curation/og-catalog-curation.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Catalogue curation: can a model put a messy product listing on the right shelf? Parts 1 to 4 done, fine-tuning next.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#f1f3f5">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="../../fonts/archivo-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the case study</a>
+  <div class="wrap">
+    <header class="site-header">
+      <a class="site-name" href="../../">Raghvendra Rao Koduri</a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="../../#work" aria-current="page">Work</a>
+        <a href="https://github.com/raghu619">GitHub</a>
+        <a href="https://www.linkedin.com/in/raghvendra-rao-koduri-6b339595/">LinkedIn</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <p class="breadcrumb"><a href="../../#work">Work</a> / Catalogue curation</p>
+      <h1>Catalogue curation</h1>
+      <p class="dek">Can a model read a messy product listing and put it on the right shelf? Five experiments on 25,022 real Shopify products and 141 categories, from cleaning the data to asking LLMs.</p>
+      <div class="status">
+        <span class="status__state">In progress: parts 1 to 4 done, fine-tuning next</span>
+        <a href="https://github.com/raghu619/catalog-curation">Code and notebooks on GitHub</a>
+        <a href="https://huggingface.co/datasets/raghu619/shopify_category_lite">Dataset on Hugging Face</a>
+      </div>
+
+      <section class="shelve" aria-labelledby="shelve-title">
+        <div class="shelve__head">
+          <h2 id="shelve-title">Where would you shelve these?</h2>
+          <p>Three real listings from the dataset. Pick one to see its category and how my models filed it.</p>
+        </div>
+
+        <div class="shelve__grid">
+          <div class="tags" role="tablist" aria-label="Product listings" data-shelve-tabs>
+            <button class="tag" role="tab" id="tab-buttermilk" aria-controls="panel-buttermilk" aria-selected="true">
+              <span class="tag__edge" aria-hidden="true"></span>
+              <span class="tag__title">Mangobuttermilch mit Passionsfrucht Łowicz 500g</span>
+              <span class="tag__meta">A German listing, as it arrived</span>
+            </button>
+            <button class="tag" role="tab" id="tab-seesaw" aria-controls="panel-seesaw" aria-selected="false">
+              <span class="tag__edge" aria-hidden="true"></span>
+              <span class="tag__title">Better Sporting Dogs Practice See Saw</span>
+              <span class="tag__meta">Agility training equipment</span>
+            </button>
+            <button class="tag" role="tab" id="tab-shoes" aria-controls="panel-shoes" aria-selected="false">
+              <span class="tag__edge" aria-hidden="true"></span>
+              <span class="tag__title">League of Legends K/DA Evelynn Cosplay Shoes, Lilac</span>
+              <span class="tag__meta">Shoes from a game character's outfit</span>
+            </button>
+          </div>
+
+          <div>
+            <div class="answer" role="tabpanel" id="panel-buttermilk" aria-labelledby="tab-buttermilk">
+              <p class="answer__label">This catalogue files it under</p>
+              <p class="shelf-path"><span class="shelf-path__aisle">Food, Beverages &amp; Tobacco</span><span class="shelf-path__shelf">Beverages</span></p>
+              <ul class="verdicts">
+                <li class="verdict verdict--wrong">
+                  <span class="verdict__model">Logistic regression, raw German text</span>
+                  <span class="verdict__answer">Hardware &gt; Building Consumables</span>
+                  <span class="verdict__label">Wrong aisle</span>
+                </li>
+                <li class="verdict verdict--right">
+                  <span class="verdict__model">Same model, after the LLM rewrite</span>
+                  <span class="verdict__answer">Food, Beverages &amp; Tobacco &gt; Beverages</span>
+                  <span class="verdict__label">Right<span class="verdict__sure">77% sure</span></span>
+                </li>
+                <li class="verdict verdict--close">
+                  <span class="verdict__model">The course's 8-layer neural network</span>
+                  <span class="verdict__answer">Food, Beverages &amp; Tobacco &gt; Food Items</span>
+                  <span class="verdict__label">Right aisle, wrong shelf<span class="verdict__sure">100% sure</span></span>
+                </li>
+              </ul>
+              <p class="answer__note">Translating the listing into plain English was the whole fix: the same simple model went from Hardware to the right shelf.</p>
+            </div>
+
+            <div class="answer" role="tabpanel" id="panel-seesaw" aria-labelledby="tab-seesaw">
+              <p class="answer__label">This catalogue files it under</p>
+              <p class="shelf-path"><span class="shelf-path__aisle">Animals &amp; Pet Supplies</span><span class="shelf-path__shelf">Pet Supplies</span></p>
+              <ul class="verdicts">
+                <li class="verdict verdict--right">
+                  <span class="verdict__model">Logistic regression</span>
+                  <span class="verdict__answer">Animals &amp; Pet Supplies &gt; Pet Supplies</span>
+                  <span class="verdict__label">Right<span class="verdict__sure">99% sure</span></span>
+                </li>
+                <li class="verdict verdict--wrong">
+                  <span class="verdict__model">The course's 8-layer neural network</span>
+                  <span class="verdict__answer">Sporting Goods &gt; Fitness &amp; General Exercise Equipment</span>
+                  <span class="verdict__label">Wrong aisle<span class="verdict__sure">100% sure; it gave the right answer a 3-in-10-trillion chance</span></span>
+                </li>
+              </ul>
+              <p class="answer__note">In a simple model, the word "dogs" just adds its vote. The deep network had memorised word combinations instead, and was certain about the wrong one.</p>
+            </div>
+
+            <div class="answer" role="tabpanel" id="panel-shoes" aria-labelledby="tab-shoes">
+              <p class="answer__label">This catalogue files it under</p>
+              <p class="shelf-path"><span class="shelf-path__aisle">Apparel &amp; Accessories</span><span class="shelf-path__shelf">Costumes &amp; Accessories</span></p>
+              <ul class="verdicts">
+                <li class="verdict verdict--close">
+                  <span class="verdict__model">gpt-4.1-nano, no training</span>
+                  <span class="verdict__answer">Apparel &amp; Accessories &gt; Shoes</span>
+                  <span class="verdict__label">Right aisle, wrong shelf</span>
+                </li>
+              </ul>
+              <p class="answer__note">The words say shoes; this store says costume. That's a convention, not knowledge, and a model can only learn it from examples. Teaching it is what fine-tuning is for.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="question" aria-labelledby="question-title">
+        <h2 id="question-title">The question</h2>
+        <div class="measure">
+          <p>In an earlier project, <a href="https://github.com/raghu619/stylesense-rag">StyleSense</a>, I built a shopping assistant that filters products by budget, category and gender before it searches. It worked because the catalogue was synthetic and every product carried a clean category. Real catalogues don't.</p>
+          <p>So this project asks where category data comes from, and whether a model can fill it in: read a product's title and description, and pick its category from 141, such as Home &amp; Garden &gt; Decor.</p>
+          <p><strong>How it's measured:</strong> every trained model is scored once on 2,497 products it never saw during training, by the share it puts in exactly the right category. For scale, a random guess gets 0.8% and always picking the most common category gets 2.0%. The LLM results so far come from a 100-product check, which carries about ±10 points of noise.</p>
+        </div>
+      </section>
+
+      <section class="section" id="parts" aria-labelledby="parts-title">
+        <h2 id="parts-title">Five parts, one question</h2>
+        <p class="section__intro">Each part is a notebook with measured findings and a public write-up, and each builds on the one before.</p>
+        <ol class="aisles">
+          <li><a class="aisle-sign" href="#part-1"><span class="aisle-sign__num">1</span><span class="aisle-sign__label">Clean the data</span></a></li>
+          <li><a class="aisle-sign" href="#part-2"><span class="aisle-sign__num">2</span><span class="aisle-sign__label">Rewrite every listing with an LLM</span></a></li>
+          <li><a class="aisle-sign" href="#part-3"><span class="aisle-sign__num">3</span><span class="aisle-sign__label">Set the bar with classic models</span></a></li>
+          <li><a class="aisle-sign" href="#part-4"><span class="aisle-sign__num">4</span><span class="aisle-sign__label">Neural networks and LLMs with no training</span></a></li>
+          <li><a class="aisle-sign aisle-sign--next" href="#part-5"><span class="aisle-sign__num">5</span><span class="aisle-sign__label">Fine-tune a small LLM (next)</span></a></li>
+        </ol>
+
+        <article class="part" id="part-1" aria-labelledby="part-1-title">
+          <div class="part__head"><span class="part__num" aria-hidden="true">1</span><h3 id="part-1-title">Clean the data</h3></div>
+          <p class="measure">I started from Shopify's public product catalogue, 48,289 listings, and turned it into a dataset I could trust before training anything on it.</p>
+          <ul class="findings">
+            <li><strong>The answer was in the input.</strong> A field listing candidate categories contained the correct one for every product. Training on it would have measured lookup, not reading, so I removed it.</li>
+            <li><strong>My first cleaning rule was wrong.</strong> A phone-number pattern matched 1,813 products, mostly clothing sizes and model years. Reading the matches led to a stricter rule that found the 74 real numbers.</li>
+            <li><strong>Contact details in a public dataset.</strong> 283 listings had email addresses and 300 had URLs. All removed before publishing.</li>
+            <li><strong>Very uneven categories.</strong> Some had 3 products, others thousands. I kept the 141 with at least 20 products and capped each at 500: 25,022 products, split 20,027 / 2,498 / 2,497 for training, validation and test.</li>
+          </ul>
+          <figure class="figure">
+            <div class="figure__frame"><a class="figure__zoom" href="../../assets/catalog-curation/hidden_problems.png"><img src="../../assets/catalog-curation/hidden_problems.png" width="1800" height="750" loading="lazy" alt="Bar chart on a log scale of problems found in the raw catalogue: the candidate list contained the answer for 38,511 products, a loose phone rule matched 1,813, 300 products had URLs, 283 had emails, 74 had real phone numbers, 32 duplicates and 29 conflicting-label products were removed."></a></div>
+            <figcaption>What the raw catalogue hid, on a log scale.</figcaption>
+          </figure>
+          <p class="lesson">A cleaning rule is a hypothesis until you read what it matched.</p>
+        </article>
+
+        <article class="part" id="part-2" aria-labelledby="part-2-title">
+          <div class="part__head"><span class="part__num" aria-hidden="true">2</span><h3 id="part-2-title">Rewrite every listing with an LLM</h3></div>
+          <p class="measure">Listings ranged from a single word to pages of marketing copy, in English and six other languages. I had gpt-4.1-nano rewrite every product into the same four short lines in English (title, brand, description, details) through OpenAI's Batch API. The final run cost $0.77.</p>
+          <ul class="findings">
+            <li><strong>The first prompt invented facts.</strong> "12,5 cm" became "12 sheets". The second prompt fixed it, backed by a check in code that flags any number not in the original listing.</li>
+            <li><strong>The third prompt looked better and wasn't.</strong> It fixed one problem but, across all 25,022 products, left more descriptions empty and invented more numbers. I kept the second.</li>
+            <li><strong>Shorter and cleaner.</strong> The rewrites are 55% shorter than the originals.</li>
+          </ul>
+          <figure class="figure">
+            <div class="figure__frame"><a class="figure__zoom" href="../../assets/catalog-curation/prompt_v2_vs_v3.png"><img src="../../assets/catalog-curation/prompt_v2_vs_v3.png" width="1350" height="750" loading="lazy" alt="Grouped bar chart titled My third prompt was worse than my second: descriptions left as Unknown rose from 391 with prompt 2 to 625 with prompt 3, and flagged invented numbers rose from 358 to 434, out of 25,022 products."></a></div>
+            <figcaption>Prompt 3 against prompt 2 on all 25,022 products.</figcaption>
+          </figure>
+          <p class="lesson">A rule in a prompt is a request. A rule in code is a guarantee.</p>
+        </article>
+
+        <article class="part" id="part-3" aria-labelledby="part-3-title">
+          <div class="part__head"><span class="part__num" aria-hidden="true">3</span><h3 id="part-3-title">Set the bar with classic models</h3></div>
+          <p class="measure">Before trying anything expensive, I measured what cheap classic models get from a 2,000-word bag of words. Logistic regression set the bar at 49.8%, in 5 seconds on a laptop. The rewrite from part 2 added 8.5 to 10.5 points to every model, and on listings in other languages it lifted accuracy from 15% to 48%.</p>
+          <figure class="figure">
+            <div class="figure__frame"><a class="figure__zoom" href="../../assets/catalog-curation/part3_raw_vs_rewrite.png"><img src="../../assets/catalog-curation/part3_raw_vs_rewrite.png" width="1650" height="825" loading="lazy" alt="Horizontal bar chart comparing raw text and the LLM rewrite for three models on 2,497 test products: logistic regression 39.5% to 49.8%, random forest 35.8% to 46.3%, XGBoost 39.8% to 48.4%."></a></div>
+            <figcaption>Same models, same settings: raw text against the LLM rewrite.</figcaption>
+          </figure>
+          <p class="lesson">The input mattered more than the algorithm: about 10 points from changing the text, at most 4 from changing the model.</p>
+        </article>
+
+        <article class="part" id="part-4" aria-labelledby="part-4-title">
+          <div class="part__head"><span class="part__num" aria-hidden="true">4</span><h3 id="part-4-title">Neural networks and LLMs with no training</h3></div>
+          <div class="measure">
+            <p>I built a neural network in PyTorch, the 8-layer design from the course I'm following, and trained it one step at a time to see what training really does. It scored 25.5%, half of logistic regression. Removing all 7 hidden layers nearly doubled it.</p>
+            <p>The notebook measured three reasons:</p>
+          </div>
+          <ul class="findings">
+            <li><strong>The learning signal faded.</strong> By the first layer, the one that reads the words, it was 343 times weaker than at the last.</li>
+            <li><strong>It memorised.</strong> 96% right on products it had seen, 25% on new ones.</li>
+            <li><strong>It was confidently wrong.</strong> When it said it was 90% sure, it was right 38% of the time. Logistic regression, 88%.</li>
+          </ul>
+          <p class="measure">One fix per problem. Skip connections and LayerNorm, the building blocks inside every transformer, brought 8 layers back to 49.9%. A single wide layer with dropout reached 53.5%, the first trained model to beat the bar.</p>
+          <figure class="figure">
+            <div class="figure__frame"><a class="figure__zoom" href="../../assets/catalog-curation/part4_improved_network.png"><img src="../../assets/catalog-curation/part4_improved_network.png" width="2984" height="858" loading="lazy" alt="Three panels. Validation accuracy per epoch for four networks; learning signal per layer, which falls 343 times from layer 8 to layer 1 in the course's network but stays almost flat after the fix; and test accuracy: 1 wide hidden layer 53.5%, 8 fixed layers 49.9%, logistic regression 49.8%, no hidden layers 49.0%, the course's network 25.5%."></a></div>
+            <figcaption>The fixes, measured: validation curves, the learning signal per layer before and after, and test accuracy.</figcaption>
+          </figure>
+          <div class="measure">
+            <p>The same network design does well in the course because it learns from 800,000 products to predict a single number, a price. Here it had 20,027 products and 141 categories. Neural networks need data.</p>
+            <p>Then I gave the task to LLMs with no training at all: the 141 category names, and a strict JSON schema that only accepts one of them. On a 100-product check, Gemini 2.5 Flash got 73% and GPT-5 mini 68%, ahead of everything I trained. gpt-4.1-nano got 38%.</p>
+            <p>Most of the big models' misses were in the right aisle, on the wrong shelf. That's this store's convention, not missing knowledge.</p>
+          </div>
+          <figure class="figure">
+            <div class="figure__frame"><a class="figure__zoom" href="../../assets/catalog-curation/part4_llms_validation100.png"><img src="../../assets/catalog-curation/part4_llms_validation100.png" width="1785" height="761" loading="lazy" alt="Stacked bar chart on 100 validation products showing right, right aisle but wrong shelf, and wrong aisle shares: Gemini 2.5 Flash 73, 13, 14; GPT-5 mini 68, 13, 19; 1 wide hidden layer 52, 10, 38; logistic regression 49, 13, 38; Claude Sonnet 4.5 45, 42, 13; gpt-4.1-nano 38, 15, 47."></a></div>
+            <figcaption>100 validation products: right, right aisle but wrong shelf, or wrong aisle. Claude Sonnet 4.5's unusual share of wrong-shelf answers points at the strict schema rather than the model, so its score is under review.</figcaption>
+          </figure>
+          <p class="lesson">Small data favours simple models. With no data at all, big pretrained models win.</p>
+        </article>
+
+        <article class="part part--next" id="part-5" aria-labelledby="part-5-title">
+          <div class="part__head"><span class="part__num" aria-hidden="true">5</span><h3 id="part-5-title">Fine-tune a small LLM (next)</h3></div>
+          <p class="measure">Next I fine-tune gpt-4.1-nano on the 20,027 training products. Can a small model that learns this catalogue's conventions close the gap from 38% to the 73% of a big model that only knows the world?</p>
+        </article>
+      </section>
+
+      <section class="section" id="results" aria-labelledby="results-title">
+        <h2 id="results-title">Every model on one chart</h2>
+        <figure class="figure">
+          <div class="figure__frame"><a class="figure__zoom" href="../../assets/catalog-curation/part4_final_results.png"><img src="../../assets/catalog-curation/part4_final_results.png" width="2396" height="1654" loading="lazy" alt="Horizontal bar chart of every model: Gemini 2.5 Flash 73% and GPT-5 mini 68% with no training on 100 products; 1 wide hidden layer 53.5%, 8 fixed layers 49.9%, logistic regression 49.8%, no hidden layers 49.0%, XGBoost 48.4%, random forest 46.3%; Claude Sonnet 4.5 45% and gpt-4.1-nano 38% with no training; the course's 8-layer network 25.5%; most common category 2.0%; random guess 0.8%."></a></div>
+          <figcaption>Striped bars are LLMs with no training, checked on 100 products. Everything else is scored on all 2,497 test products.</figcaption>
+        </figure>
+        <div class="table-wrap">
+          <table class="results">
+            <caption>Share of products put in exactly the right category, out of 141.</caption>
+            <thead>
+              <tr><th scope="col">Model</th><th scope="col" class="num">Accuracy</th></tr>
+            </thead>
+            <tbody>
+              <tr class="group"><td colspan="2">Trained on my data, scored on 2,497 test products</td></tr>
+              <tr class="is-best"><td>1 wide hidden layer with dropout</td><td class="num">53.5%</td></tr>
+              <tr><td>8 layers with skip connections, LayerNorm and dropout</td><td class="num">49.9%</td></tr>
+              <tr><td>Logistic regression</td><td class="num">49.8%</td></tr>
+              <tr><td>Network with no hidden layers</td><td class="num">49.0%</td></tr>
+              <tr><td>XGBoost</td><td class="num">48.4%</td></tr>
+              <tr><td>Random forest</td><td class="num">46.3%</td></tr>
+              <tr><td>The course's 8-layer network</td><td class="num">25.5%</td></tr>
+              <tr class="group"><td colspan="2">No training, checked on 100 products</td></tr>
+              <tr class="is-best"><td>Gemini 2.5 Flash</td><td class="num">73%</td></tr>
+              <tr><td>GPT-5 mini</td><td class="num">68%</td></tr>
+              <tr><td>Claude Sonnet 4.5 (under review)</td><td class="num">45%</td></tr>
+              <tr><td>gpt-4.1-nano</td><td class="num">38%</td></tr>
+              <tr class="group"><td colspan="2">For scale</td></tr>
+              <tr><td>Always the most common category</td><td class="num">2.0%</td></tr>
+              <tr><td>Random guess</td><td class="num">0.8%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="fixes" aria-labelledby="fixes-title">
+        <h2 id="fixes-title">What went wrong, and what fixed it</h2>
+        <dl class="fixes">
+          <div class="fix">
+            <dt>The data contained the answer<span>A candidate-categories field held the correct category for every product.</span></dt>
+            <dd>Removed it before training, so every score measures reading the listing, not looking up the answer.</dd>
+          </div>
+          <div class="fix">
+            <dt>A cleaning rule deleted real attributes<span>A loose phone-number pattern matched clothing sizes and model years.</span></dt>
+            <dd>Printed every match before applying the rule, then wrote a stricter one: 74 real numbers instead of 1,813 matches.</dd>
+          </div>
+          <div class="fix">
+            <dt>The LLM rewrite invented numbers<span>"12,5 cm" became "12 sheets".</span></dt>
+            <dd>A stricter prompt plus a number check in code. A third prompt that looked better was worse across all 25,022 products, so I rejected it.</dd>
+          </div>
+          <div class="fix">
+            <dt>Listings in seven languages<span>A bag-of-words model trained mostly on English can't read German or Japanese.</span></dt>
+            <dd>The rewrite translated everything into English: accuracy on non-English listings rose from 15% to 48%.</dd>
+          </div>
+          <div class="fix">
+            <dt>A deep network that couldn't learn<span>The learning signal was 343 times weaker at the first layer.</span></dt>
+            <dd>Skip connections and LayerNorm: from 25.5% to 49.9% with the same 8 layers.</dd>
+          </div>
+          <div class="fix">
+            <dt>Memorising, then confidently wrong<span>96% right on seen products, 25% on new ones; right 38% of the time when 90% sure.</span></dt>
+            <dd>Dropout, keeping the best epoch on validation, and a calibration check for every model.</dd>
+          </div>
+          <div class="fix">
+            <dt>Paying for the same 141 names on every call<span>2,048 of every prompt's 2,190 tokens were identical.</span></dt>
+            <dd>Put the fixed text first so OpenAI caches it: 69% cheaper per call, and cheaper than the Batch API for this job.</dd>
+          </div>
+          <div class="fix">
+            <dt>Notebooks hide state<span>Re-running one cell once broke a results table.</span></dt>
+            <dd>Every published notebook is re-run top to bottom, and LLM answers are saved, so a re-run never pays twice.</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="section" id="tools" aria-labelledby="tools-title">
+        <h2 id="tools-title">Tools</h2>
+        <p class="stack">Python, pandas, scikit-learn, XGBoost and PyTorch for the models. The OpenAI API (Batch API, structured outputs, prompt caching) and OpenRouter for the LLMs. Hugging Face Datasets to publish the data, matplotlib for every chart, and Jupyter notebooks for each part.</p>
+      </section>
+
+      <section class="section" id="code" aria-labelledby="code-title">
+        <h2 id="code-title">Code and data</h2>
+        <ul class="links">
+          <li><a href="https://github.com/raghu619/catalog-curation">Code and notebooks on GitHub</a><span>All four notebooks, every chart, and the write-up for each part.</span></li>
+          <li><a href="https://github.com/raghu619/catalog-curation/blob/main/04_nn_and_untuned_llm.ipynb">Part 4 notebook</a><span>Neural networks built step by step, then LLMs with no training.</span></li>
+          <li><a href="https://huggingface.co/datasets/raghu619/shopify_category_lite">The curated dataset on Hugging Face</a><span>25,022 products in 141 categories, with the LLM rewrite of every listing. Apache-2.0.</span></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Raghvendra Rao Koduri, 2026</span>
+      <nav aria-label="Elsewhere">
+        <a href="../../">Home</a>
+        <a href="https://github.com/raghu619">GitHub</a>
+        <a href="https://www.linkedin.com/in/raghvendra-rao-koduri-6b339595/">LinkedIn</a>
+      </nav>
+    </footer>
+  </div>
+  <script src="../../shelve.js" defer></script>
+</body>
+</html>
