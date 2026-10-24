@@ -1,0 +1,1750 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>But what is Ed's deep neural network? | Raghvendra Rao Koduri</title>
+  <meta name="description" content="A picture-first walk through the deep neural network in Ed Donner's LLM Engineering course: how 289 million numbers turn a product description into a price, with interactive demos.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="But what is Ed's deep neural network?">
+  <meta property="og:description" content="A side quest through the 289-million-parameter price predictor from Ed Donner's LLM Engineering course, explained one interactive picture at a time.">
+  <meta property="og:url" content="https://raghvendra-rao-koduri.vercel.app/notes/deep-neural-network/">
+  <meta property="og:image" content="https://raghvendra-rao-koduri.vercel.app/assets/deep-neural-network/og-deep-neural-network.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="But what is Ed's deep neural network? One product description lights up 34 of 5,000 hashed buckets.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b0d11">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="../../fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../fonts/stix-two-text-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+@font-face { font-family: "STIX Two Text"; src: url("../../fonts/stix-two-text-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "STIX Two Text"; src: url("../../fonts/stix-two-text-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "STIX Two Text"; src: url("../../fonts/stix-two-text-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../../fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../../fonts/ibm-plex-sans-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../../fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../../fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../../fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../../fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+
+/* Layout: one 54rem lesson column of numbered steps. Each step pairs a dark "stage" (the picture you can play with)
+   with 38rem of narration, a pause-and-ponder card and the exact lines of Ed's file.
+   Single dark chalkboard theme on purpose, in the spirit of 3Blue1Brown. */
+:root {
+  color-scheme: dark;
+  --bg: #0b0d11;
+  --stage: #11141a;
+  --well: #171b22;
+  --cell: #1f242d;
+  --rule: #2a303b;
+  --fg: #eeede8;
+  --code-fg: #d9dce2;
+  --muted: #a5adbb;
+  --faint: #6c7484;
+  --blue: #58c4dd;
+  --brown: #d4955c;
+  --yellow: #f4d35e;
+  --red: #fc6255;
+  --green: #83c167;
+  --teal: #5cd0b3;
+  --yellow-soft: rgba(244, 211, 94, 0.78);
+  --yellow-dim: rgba(244, 211, 94, 0.45);
+  --hl: rgba(244, 211, 94, 0.09);
+  --term: #07080b;
+  --font-display: "STIX Two Text", "STIX Two", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --t-2: 0.75rem;
+  --t-1: 0.875rem;
+  --t0: 1.0625rem;
+  --t1: 1.25rem;
+  --t2: 1.5rem;
+  --t3: clamp(1.75rem, 4.2vw, 2.25rem);
+  --t4: clamp(2.2rem, 6vw, 3.4rem);
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--t0);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  box-sizing: content-box;
+  max-width: 54rem;
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: clamp(32px, 6vw, 72px) 96px;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: var(--t4); letter-spacing: -0.01em; }
+h2 { font-size: var(--t3); }
+h3 { font-size: var(--t2); }
+p, ul, ol, figure, dl { margin: 0; }
+a { color: var(--blue); text-underline-offset: 3px; }
+strong { font-weight: 600; }
+code { font-family: var(--font-mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--well); border: 1px solid var(--rule); border-radius: 5px; padding: 0.05em 0.35em; overflow-wrap: anywhere; }
+.m { font-family: var(--font-display); font-size: 1.08em; white-space: nowrap; }
+.m i { font-style: italic; }
+.prose { max-width: 38rem; display: grid; gap: 1rem; min-width: 0; }
+.prose ul, .prose ol { padding-left: 1.3rem; display: grid; gap: 0.5rem; }
+.prose li::marker { color: var(--faint); }
+.muted { color: var(--muted); }
+.small { font-size: var(--t-1); }
+.kicker, .label {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- hero ---------- */
+.hero { display: grid; gap: 1.25rem; }
+.lede { font-size: var(--t1); line-height: 1.55; max-width: 40rem; color: var(--fg); }
+.machine {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) auto minmax(0, 1fr) auto minmax(0, 0.9fr);
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 0.75rem;
+}
+.machine > div { background: var(--stage); border: 1px solid var(--rule); border-radius: 14px; padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.machine .arrow { align-self: center; justify-self: center; width: 34px; height: 20px; color: var(--faint); }
+.m-text { font-family: var(--font-mono); font-size: 0.74rem; line-height: 1.55; color: var(--code-fg); white-space: pre-line; overflow-wrap: anywhere; }
+.m-box { text-align: center; justify-items: center; }
+.m-box strong { font-family: var(--font-display); font-size: 1.7rem; font-weight: 600; color: var(--yellow); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.m-box svg { width: 100%; max-width: 190px; height: auto; }
+.m-out { text-align: center; justify-items: center; align-content: center !important; }
+.m-out strong { font-family: var(--font-display); font-size: 2.2rem; color: var(--brown); line-height: 1.1; }
+@media (max-width: 760px) {
+  .machine { grid-template-columns: 1fr; }
+  .machine .arrow { transform: rotate(90deg); }
+}
+
+/* ---------- file map ---------- */
+.filemap { display: grid; gap: 1rem; padding-top: clamp(48px, 7vw, 80px); }
+.map { list-style: none; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--rule); }
+.map li {
+  display: grid;
+  grid-template-columns: 92px 5.2rem minmax(0, 1fr) auto;
+  gap: 4px 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--t-1);
+}
+.mini { position: relative; height: 8px; background: var(--cell); border-radius: 4px; overflow: hidden; }
+.mini i { position: absolute; top: 0; bottom: 0; background: var(--yellow); border-radius: 4px; }
+.map code { color: var(--muted); background: none; border: 0; padding: 0; font-variant-numeric: tabular-nums; }
+.map .go { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.map .go a { font-family: var(--font-mono); font-size: var(--t-2); text-decoration: none; color: var(--yellow); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+.map .go a:hover { border-color: var(--yellow); }
+@media (max-width: 600px) {
+  .map li { grid-template-columns: 64px minmax(0, 1fr); }
+  .map li > code { grid-column: 1; grid-row: 2; }
+  .map li > span:nth-of-type(2) { grid-column: 2; grid-row: 1 / span 2; }
+  .map .go { grid-column: 2; justify-content: flex-start; }
+}
+
+/* ---------- steps ---------- */
+.step { display: grid; gap: 1.5rem; padding-top: clamp(64px, 9vw, 112px); scroll-margin-top: 12px; }
+.step-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 1.1rem; align-items: end; }
+.step-num { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: clamp(3rem, 8vw, 4.6rem); line-height: 0.85; color: var(--yellow); }
+.step-head .kicker { display: block; margin-bottom: 0.35rem; }
+h3.sub { font-size: var(--t1); margin: 0.5rem 0 0; }
+
+.stage {
+  background: var(--stage);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: clamp(14px, 3vw, 24px);
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.stage figcaption, .caption { font-size: var(--t-1); color: var(--muted); max-width: 44rem; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0; }
+.scroll-x > svg { display: block; width: 100%; height: auto; }
+@media (max-width: 600px) { .scroll-x > svg.wide { min-width: 560px; } }
+svg text { fill: var(--fg); font-family: var(--font-body); }
+svg .t-muted { fill: var(--muted); }
+svg .t-faint { fill: var(--faint); }
+svg .t-mono { font-family: var(--font-mono); }
+svg .t-yellow { fill: var(--yellow); }
+svg .t-teal { fill: var(--teal); }
+svg .t-brown { fill: var(--brown); }
+svg .t-red { fill: var(--red); }
+svg .t-green { fill: var(--green); }
+svg .t-blue { fill: var(--blue); }
+svg .axis { stroke: var(--faint); stroke-width: 1; fill: none; }
+svg .gridline { stroke: var(--rule); stroke-width: 1; fill: none; }
+svg .box { fill: var(--well); stroke: var(--rule); stroke-width: 1.2; }
+svg .box-hot { fill: var(--well); stroke: var(--yellow); stroke-width: 1.4; }
+svg .flow { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+svg .flow-teal { stroke: var(--teal); stroke-width: 2.2; fill: none; }
+svg .arrowhead { fill: var(--muted); }
+svg .arrowhead-teal { fill: var(--teal); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn {
+  font: 500 var(--t-1)/1.2 var(--font-body);
+  color: var(--fg);
+  background: var(--well);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--faint); }
+.btn[aria-pressed="true"] { border-color: var(--yellow); color: var(--yellow); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn .num { color: var(--faint); margin-right: 0.35em; font-family: var(--font-mono); }
+.btn[aria-pressed="true"] .num { color: var(--yellow); }
+:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+input[type="range"] { accent-color: var(--yellow); width: 100%; margin: 0; }
+textarea {
+  width: 100%;
+  min-height: 9.5rem;
+  resize: vertical;
+  background: var(--well);
+  color: var(--code-fg);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 400 0.8rem/1.55 var(--font-mono);
+}
+.field { display: grid; gap: 6px; }
+.field-row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+output, .num-out { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--yellow); }
+
+.readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+.readout div { background: var(--well); border: 1px solid var(--rule); border-radius: 10px; padding: 8px 10px; display: grid; gap: 2px; min-width: 0; }
+.readout dt { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.readout dd { margin: 0; font: 500 1rem/1.3 var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.eq {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--code-fg);
+  background: var(--well);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+.big-formula { font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.1rem); text-align: center; padding: 6px 0; }
+.big-formula i { font-style: italic; }
+
+/* ponder */
+.ponder { max-width: 38rem; border: 1px dashed var(--faint); border-radius: 12px; padding: 14px 18px; display: grid; gap: 0.5rem; }
+.ponder .p-label { font-family: var(--font-display); font-style: italic; color: var(--yellow); font-size: var(--t1); }
+.ponder summary { cursor: pointer; color: var(--muted); font-size: var(--t-1); width: fit-content; }
+.ponder details[open] summary { margin-bottom: 0.5rem; }
+.ponder details p { color: var(--fg); }
+
+/* code */
+.code-block { display: grid; gap: 6px; min-width: 0; }
+.code-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font: 500 var(--t-2) var(--font-mono); letter-spacing: 0.04em; color: var(--muted); }
+pre.code {
+  margin: 0;
+  background: var(--well);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 10px 0;
+  overflow-x: auto;
+  font: 400 0.78rem/1.6 var(--font-mono);
+  color: var(--code-fg);
+  tab-size: 4;
+}
+pre.code .ln { display: block; padding-right: 16px; white-space: pre; min-height: 1.6em; }
+pre.code .ln::before { content: attr(data-n); display: inline-block; width: 3.4em; padding-right: 1.1em; text-align: right; color: var(--faint); user-select: none; -webkit-user-select: none; }
+pre.code .ln.hl { background: var(--hl); box-shadow: inset 3px 0 0 var(--yellow); }
+pre.code .tk { color: var(--blue); }
+pre.code .ts { color: var(--green); }
+pre.code .tn { color: var(--brown); }
+pre.code .tc { color: var(--faint); font-style: italic; }
+pre.code .tm { color: var(--teal); }
+
+/* step 1: hashing */
+.tokens { display: flex; flex-wrap: wrap; gap: 6px; max-height: 260px; overflow: auto; padding: 2px; }
+.tok {
+  display: inline-grid;
+  gap: 1px;
+  line-height: 1.15;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--well);
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  cursor: default;
+}
+.tok b { font-weight: 500; color: var(--fg); }
+.tok i { font-style: normal; color: var(--yellow); font-size: 0.68rem; font-variant-numeric: tabular-nums; }
+.tok.stop b { text-decoration: line-through; color: var(--faint); }
+.tok.stop i, .tok.dup i { color: var(--faint); }
+.tok.dup b { color: var(--muted); }
+.tok.col { border-color: var(--red); }
+.tok.col i { color: var(--red); }
+.tok.hot { border-color: var(--yellow); }
+.tok[data-b] { cursor: pointer; }
+#hash-grid { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; border-radius: 8px; touch-action: manipulation; cursor: crosshair; }
+.tip { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); min-height: 1.4em; }
+.tip b { color: var(--yellow); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: var(--t-2); color: var(--muted); font-family: var(--font-mono); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+
+/* chains (steps 6 and 10) */
+.chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.chain .card { flex: 1 1 120px; min-width: 0; background: var(--well); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+.chain .card .v { font: 500 1.05rem/1.25 var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.chain .card .v.money { color: var(--brown); font-family: var(--font-display); font-size: 1.5rem; }
+.chain .card .d { font-size: var(--t-2); color: var(--muted); line-height: 1.4; }
+.chain .card.first .v { color: var(--yellow); }
+.chain .to { align-self: center; color: var(--faint); font-family: var(--font-mono); }
+@media (max-width: 600px) { .chain { flex-direction: column; } .chain .to { transform: rotate(90deg); align-self: flex-start; margin-left: 18px; } }
+
+/* step 7: params */
+.pc-total { font-family: var(--font-display); font-size: clamp(1.8rem, 5vw, 2.6rem); color: var(--yellow); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.pc-total span { font-family: var(--font-body); font-size: var(--t0); color: var(--muted); }
+.pc-bar { display: flex; height: 30px; gap: 2px; border-radius: 6px; overflow: hidden; }
+.pc-bar i { display: block; height: 100%; }
+.pc-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: var(--t-1); color: var(--muted); }
+.pc-legend b { font-family: var(--font-mono); font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
+.pc-legend i { width: 11px; height: 11px; display: inline-block; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.pc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 24px; }
+
+/* results */
+.bars { display: grid; gap: 7px; }
+.bar { display: grid; grid-template-columns: minmax(8.5rem, 15rem) minmax(0, 1fr); gap: 12px; align-items: center; font-size: var(--t-1); }
+.bar .name { text-align: right; color: var(--muted); line-height: 1.25; }
+.bar.me .name { color: var(--yellow); font-weight: 600; }
+.bar .track { display: grid; grid-template-columns: minmax(0, 1fr) 4.6rem; align-items: center; gap: 8px; min-width: 0; }
+.bar .fill { height: 18px; border-radius: 0 4px 4px 0; display: block; }
+@media (max-width: 600px) { .bar { grid-template-columns: 7.2rem minmax(0, 1fr); gap: 8px; } }
+.bar .val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.c-frontier { background: var(--blue); }
+.c-scratch { background: var(--yellow); }
+.c-scratch-dim { background: var(--yellow-dim); }
+.c-ft { background: var(--brown); }
+.c-ml { background: var(--faint); }
+.c-human { background: var(--fg); }
+
+/* terminal */
+.term { background: var(--term); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; font: 400 0.84rem/1.75 var(--font-mono); color: var(--code-fg); overflow-x: auto; white-space: pre; }
+.term .pin { color: var(--yellow); }
+.notes { display: grid; gap: 0.8rem; padding-left: 1.4rem; max-width: 40rem; }
+.notes li::marker { color: var(--yellow); font-family: var(--font-display); }
+
+.closing { display: grid; gap: 1.5rem; padding-top: clamp(64px, 9vw, 112px); }
+.recap { display: grid; gap: 10px; max-width: 40rem; }
+.recap details { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; background: var(--stage); }
+.recap summary { cursor: pointer; font-weight: 500; }
+.recap details p { margin-top: 0.6rem; color: var(--muted); }
+footer { padding-top: 64px; max-width: 42rem; color: var(--faint); font-size: var(--t-1); display: grid; gap: 0.6rem; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+body { margin: 0; }
+img { max-width: 100%; height: auto; }
+.skip-link { position: absolute; left: -999px; top: 0.5rem; background: var(--yellow); color: var(--bg); padding: 0.5rem 0.9rem; border-radius: 4px; font-weight: 600; z-index: 10; }
+.skip-link:focus { left: 0.5rem; }
+.site-bar { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; justify-content: space-between; align-items: baseline; padding-bottom: 18px; margin-bottom: clamp(28px, 5vw, 48px); border-bottom: 1px solid var(--rule); font-size: 0.95rem; }
+.site-bar .site-name { color: var(--fg); text-decoration: none; font-weight: 600; }
+.site-bar nav { display: flex; flex-wrap: wrap; gap: 0.4rem 1.3rem; }
+.site-bar nav a { color: var(--muted); text-decoration: none; }
+.site-bar a:hover, .site-bar nav a[aria-current="page"] { color: var(--fg); text-decoration: underline; text-underline-offset: 0.3em; }
+.byline { font-size: var(--t-1); color: var(--muted); }
+.byline a { color: var(--fg); }
+.credits { display: grid; gap: 0.6rem; }
+.credits a { color: var(--muted); }
+.credits pre { white-space: pre-wrap; font: 400 0.75rem/1.5 var(--font-mono); color: var(--muted); background: var(--well); border: 1px solid var(--rule); border-radius: 8px; padding: 12px; margin: 0.5rem 0 0; }
+.credits summary { cursor: pointer; width: fit-content; }
+.site-foot { display: flex; flex-wrap: wrap; gap: 0.75rem 2rem; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: var(--t-1); color: var(--faint); }
+.site-foot nav { display: flex; gap: 1.3rem; }
+.site-foot a { color: var(--muted); text-decoration: none; }
+.site-foot a:hover { color: var(--fg); text-decoration: underline; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the explainer</a>
+<div class="page">
+<header class="site-bar"><a class="site-name" href="../../">Raghvendra Rao Koduri</a><nav aria-label="Site"><a href="../../#work">Work</a><a href="../../#notes" aria-current="page">Notes</a><a href="https://github.com/raghu619">GitHub</a><a href="https://www.linkedin.com/in/raghvendra-rao-koduri-6b339595/">LinkedIn</a></nav></header>
+<main id="main">
+
+<header class="hero">
+  <p class="kicker">A side quest &middot; Ed Donner's LLM Engineering course, week 6</p>
+  <h1>But what is Ed's deep neural network?</h1>
+  <p class="lede">A short description of a product goes in. A price comes out. In between sit 289,128,449 adjustable numbers that were nudged, 64 products at a time, until their guesses got good. Let's open the file and follow one product all the way through, one picture at a time.</p>
+  <p class="byline">By <a href="../../">Raghvendra Rao Koduri</a>, October 2026. Ed's code from <code>pricer/deep_neural_network.py</code> is quoted throughout under its MIT license.</p>
+  <div class="machine" role="img" aria-label="A product description goes into a network of 289,128,449 numbers, which should output a price near $240.">
+    <div class="m-in">
+      <span class="label">Goes in</span>
+      <p class="m-text" id="hero-text"></p>
+    </div>
+    <svg class="arrow" viewBox="0 0 34 20" aria-hidden="true"><path d="M2 10 H26" stroke="currentColor" stroke-width="2" fill="none"/><path d="M24 4 L32 10 L24 16 Z" fill="currentColor"/></svg>
+    <div class="m-box">
+      <span class="label">deep_neural_network.py</span>
+      <svg viewBox="0 0 192 96" aria-hidden="true"><line x1="14" y1="17.6" x2="70" y2="16.3" stroke="var(--blue)" stroke-opacity="0.55" stroke-width="1"/><line x1="14" y1="17.6" x2="70" y2="29.0" stroke="var(--blue)" stroke-opacity="0.42" stroke-width="1"/><line x1="14" y1="17.6" x2="70" y2="41.7" stroke="var(--blue)" stroke-opacity="0.29" stroke-width="1"/><line x1="14" y1="17.6" x2="70" y2="54.3" stroke="var(--red)" stroke-opacity="0.66" stroke-width="1"/><line x1="14" y1="17.6" x2="70" y2="67.0" stroke="var(--red)" stroke-opacity="0.53" stroke-width="1"/><line x1="14" y1="17.6" x2="70" y2="79.7" stroke="var(--blue)" stroke-opacity="0.40" stroke-width="1"/><line x1="14" y1="32.8" x2="70" y2="16.3" stroke="var(--blue)" stroke-opacity="0.27" stroke-width="1"/><line x1="14" y1="32.8" x2="70" y2="29.0" stroke="var(--blue)" stroke-opacity="0.64" stroke-width="1"/><line x1="14" y1="32.8" x2="70" y2="41.7" stroke="var(--red)" stroke-opacity="0.51" stroke-width="1"/><line x1="14" y1="32.8" x2="70" y2="54.3" stroke="var(--red)" stroke-opacity="0.38" stroke-width="1"/><line x1="14" y1="32.8" x2="70" y2="67.0" stroke="var(--blue)" stroke-opacity="0.25" stroke-width="1"/><line x1="14" y1="32.8" x2="70" y2="79.7" stroke="var(--blue)" stroke-opacity="0.62" stroke-width="1"/><line x1="14" y1="48.0" x2="70" y2="16.3" stroke="var(--blue)" stroke-opacity="0.49" stroke-width="1"/><line x1="14" y1="48.0" x2="70" y2="29.0" stroke="var(--red)" stroke-opacity="0.36" stroke-width="1"/><line x1="14" y1="48.0" x2="70" y2="41.7" stroke="var(--red)" stroke-opacity="0.23" stroke-width="1"/><line x1="14" y1="48.0" x2="70" y2="54.3" stroke="var(--blue)" stroke-opacity="0.60" stroke-width="1"/><line x1="14" y1="48.0" x2="70" y2="67.0" stroke="var(--blue)" stroke-opacity="0.47" stroke-width="1"/><line x1="14" y1="48.0" x2="70" y2="79.7" stroke="var(--blue)" stroke-opacity="0.34" stroke-width="1"/><line x1="14" y1="63.2" x2="70" y2="16.3" stroke="var(--red)" stroke-opacity="0.21" stroke-width="1"/><line x1="14" y1="63.2" x2="70" y2="29.0" stroke="var(--red)" stroke-opacity="0.58" stroke-width="1"/><line x1="14" y1="63.2" x2="70" y2="41.7" stroke="var(--blue)" stroke-opacity="0.45" stroke-width="1"/><line x1="14" y1="63.2" x2="70" y2="54.3" stroke="var(--blue)" stroke-opacity="0.32" stroke-width="1"/><line x1="14" y1="63.2" x2="70" y2="67.0" stroke="var(--blue)" stroke-opacity="0.19" stroke-width="1"/><line x1="14" y1="63.2" x2="70" y2="79.7" stroke="var(--red)" stroke-opacity="0.56" stroke-width="1"/><line x1="14" y1="78.4" x2="70" y2="16.3" stroke="var(--red)" stroke-opacity="0.43" stroke-width="1"/><line x1="14" y1="78.4" x2="70" y2="29.0" stroke="var(--blue)" stroke-opacity="0.30" stroke-width="1"/><line x1="14" y1="78.4" x2="70" y2="41.7" stroke="var(--blue)" stroke-opacity="0.67" stroke-width="1"/><line x1="14" y1="78.4" x2="70" y2="54.3" stroke="var(--blue)" stroke-opacity="0.54" stroke-width="1"/><line x1="14" y1="78.4" x2="70" y2="67.0" stroke="var(--red)" stroke-opacity="0.41" stroke-width="1"/><line x1="14" y1="78.4" x2="70" y2="79.7" stroke="var(--red)" stroke-opacity="0.28" stroke-width="1"/><line x1="70" y1="16.3" x2="126" y2="16.3" stroke="var(--blue)" stroke-opacity="0.65" stroke-width="1"/><line x1="70" y1="16.3" x2="126" y2="29.0" stroke="var(--blue)" stroke-opacity="0.52" stroke-width="1"/><line x1="70" y1="16.3" x2="126" y2="41.7" stroke="var(--blue)" stroke-opacity="0.39" stroke-width="1"/><line x1="70" y1="16.3" x2="126" y2="54.3" stroke="var(--red)" stroke-opacity="0.26" stroke-width="1"/><line x1="70" y1="16.3" x2="126" y2="67.0" stroke="var(--red)" stroke-opacity="0.63" stroke-width="1"/><line x1="70" y1="16.3" x2="126" y2="79.7" stroke="var(--blue)" stroke-opacity="0.50" stroke-width="1"/><line x1="70" y1="29.0" x2="126" y2="16.3" stroke="var(--blue)" stroke-opacity="0.37" stroke-width="1"/><line x1="70" y1="29.0" x2="126" y2="29.0" stroke="var(--blue)" stroke-opacity="0.24" stroke-width="1"/><line x1="70" y1="29.0" x2="126" y2="41.7" stroke="var(--red)" stroke-opacity="0.61" stroke-width="1"/><line x1="70" y1="29.0" x2="126" y2="54.3" stroke="var(--red)" stroke-opacity="0.48" stroke-width="1"/><line x1="70" y1="29.0" x2="126" y2="67.0" stroke="var(--blue)" stroke-opacity="0.35" stroke-width="1"/><line x1="70" y1="29.0" x2="126" y2="79.7" stroke="var(--blue)" stroke-opacity="0.22" stroke-width="1"/><line x1="70" y1="41.7" x2="126" y2="16.3" stroke="var(--blue)" stroke-opacity="0.59" stroke-width="1"/><line x1="70" y1="41.7" x2="126" y2="29.0" stroke="var(--red)" stroke-opacity="0.46" stroke-width="1"/><line x1="70" y1="41.7" x2="126" y2="41.7" stroke="var(--red)" stroke-opacity="0.33" stroke-width="1"/><line x1="70" y1="41.7" x2="126" y2="54.3" stroke="var(--blue)" stroke-opacity="0.20" stroke-width="1"/><line x1="70" y1="41.7" x2="126" y2="67.0" stroke="var(--blue)" stroke-opacity="0.57" stroke-width="1"/><line x1="70" y1="41.7" x2="126" y2="79.7" stroke="var(--blue)" stroke-opacity="0.44" stroke-width="1"/><line x1="70" y1="54.3" x2="126" y2="16.3" stroke="var(--red)" stroke-opacity="0.31" stroke-width="1"/><line x1="70" y1="54.3" x2="126" y2="29.0" stroke="var(--red)" stroke-opacity="0.18" stroke-width="1"/><line x1="70" y1="54.3" x2="126" y2="41.7" stroke="var(--blue)" stroke-opacity="0.55" stroke-width="1"/><line x1="70" y1="54.3" x2="126" y2="54.3" stroke="var(--blue)" stroke-opacity="0.42" stroke-width="1"/><line x1="70" y1="54.3" x2="126" y2="67.0" stroke="var(--blue)" stroke-opacity="0.29" stroke-width="1"/><line x1="70" y1="54.3" x2="126" y2="79.7" stroke="var(--red)" stroke-opacity="0.66" stroke-width="1"/><line x1="70" y1="67.0" x2="126" y2="16.3" stroke="var(--red)" stroke-opacity="0.53" stroke-width="1"/><line x1="70" y1="67.0" x2="126" y2="29.0" stroke="var(--blue)" stroke-opacity="0.40" stroke-width="1"/><line x1="70" y1="67.0" x2="126" y2="41.7" stroke="var(--blue)" stroke-opacity="0.27" stroke-width="1"/><line x1="70" y1="67.0" x2="126" y2="54.3" stroke="var(--blue)" stroke-opacity="0.64" stroke-width="1"/><line x1="70" y1="67.0" x2="126" y2="67.0" stroke="var(--red)" stroke-opacity="0.51" stroke-width="1"/><line x1="70" y1="67.0" x2="126" y2="79.7" stroke="var(--red)" stroke-opacity="0.38" stroke-width="1"/><line x1="70" y1="79.7" x2="126" y2="16.3" stroke="var(--blue)" stroke-opacity="0.25" stroke-width="1"/><line x1="70" y1="79.7" x2="126" y2="29.0" stroke="var(--blue)" stroke-opacity="0.62" stroke-width="1"/><line x1="70" y1="79.7" x2="126" y2="41.7" stroke="var(--blue)" stroke-opacity="0.49" stroke-width="1"/><line x1="70" y1="79.7" x2="126" y2="54.3" stroke="var(--red)" stroke-opacity="0.36" stroke-width="1"/><line x1="70" y1="79.7" x2="126" y2="67.0" stroke="var(--red)" stroke-opacity="0.23" stroke-width="1"/><line x1="70" y1="79.7" x2="126" y2="79.7" stroke="var(--blue)" stroke-opacity="0.60" stroke-width="1"/><line x1="126" y1="16.3" x2="178" y2="48.0" stroke="var(--blue)" stroke-opacity="0.47" stroke-width="1"/><line x1="126" y1="29.0" x2="178" y2="48.0" stroke="var(--blue)" stroke-opacity="0.34" stroke-width="1"/><line x1="126" y1="41.7" x2="178" y2="48.0" stroke="var(--red)" stroke-opacity="0.21" stroke-width="1"/><line x1="126" y1="54.3" x2="178" y2="48.0" stroke="var(--red)" stroke-opacity="0.58" stroke-width="1"/><line x1="126" y1="67.0" x2="178" y2="48.0" stroke="var(--blue)" stroke-opacity="0.45" stroke-width="1"/><line x1="126" y1="79.7" x2="178" y2="48.0" stroke="var(--blue)" stroke-opacity="0.32" stroke-width="1"/><circle cx="14" cy="17.6" r="5" fill="var(--yellow)" fill-opacity="0.95" stroke="var(--rule)" stroke-width="1"/><circle cx="14" cy="32.8" r="5" fill="var(--cell)" fill-opacity="1.00" stroke="var(--rule)" stroke-width="1"/><circle cx="14" cy="48.0" r="5" fill="var(--yellow)" fill-opacity="0.95" stroke="var(--rule)" stroke-width="1"/><circle cx="14" cy="63.2" r="5" fill="var(--yellow)" fill-opacity="0.95" stroke="var(--rule)" stroke-width="1"/><circle cx="14" cy="78.4" r="5" fill="var(--cell)" fill-opacity="1.00" stroke="var(--rule)" stroke-width="1"/><circle cx="70" cy="16.3" r="5" fill="var(--fg)" fill-opacity="0.28" stroke="var(--rule)" stroke-width="1"/><circle cx="70" cy="29.0" r="5" fill="var(--fg)" fill-opacity="0.57" stroke="var(--rule)" stroke-width="1"/><circle cx="70" cy="41.7" r="5" fill="var(--fg)" fill-opacity="0.16" stroke="var(--rule)" stroke-width="1"/><circle cx="70" cy="54.3" r="5" fill="var(--fg)" fill-opacity="0.45" stroke="var(--rule)" stroke-width="1"/><circle cx="70" cy="67.0" r="5" fill="var(--fg)" fill-opacity="0.74" stroke="var(--rule)" stroke-width="1"/><circle cx="70" cy="79.7" r="5" fill="var(--fg)" fill-opacity="0.33" stroke="var(--rule)" stroke-width="1"/><circle cx="126" cy="16.3" r="5" fill="var(--fg)" fill-opacity="0.41" stroke="var(--rule)" stroke-width="1"/><circle cx="126" cy="29.0" r="5" fill="var(--fg)" fill-opacity="0.70" stroke="var(--rule)" stroke-width="1"/><circle cx="126" cy="41.7" r="5" fill="var(--fg)" fill-opacity="0.29" stroke="var(--rule)" stroke-width="1"/><circle cx="126" cy="54.3" r="5" fill="var(--fg)" fill-opacity="0.58" stroke="var(--rule)" stroke-width="1"/><circle cx="126" cy="67.0" r="5" fill="var(--fg)" fill-opacity="0.17" stroke="var(--rule)" stroke-width="1"/><circle cx="126" cy="79.7" r="5" fill="var(--fg)" fill-opacity="0.46" stroke="var(--rule)" stroke-width="1"/><circle cx="178" cy="48.0" r="5" fill="var(--brown)" fill-opacity="1.00" stroke="var(--rule)" stroke-width="1"/></svg>
+      <strong>289,128,449</strong>
+      <span class="small muted">adjustable numbers</span>
+    </div>
+    <svg class="arrow" viewBox="0 0 34 20" aria-hidden="true"><path d="M2 10 H26" stroke="currentColor" stroke-width="2" fill="none"/><path d="M24 4 L32 10 L24 16 Z" fill="currentColor"/></svg>
+    <div class="m-out">
+      <span class="label">Should come out near</span>
+      <strong>$240.00</strong>
+      <span class="small muted">the real price</span>
+    </div>
+  </div>
+  <p class="small muted">A real product from the course's week 6 data. To make a prediction, the network only gets the words. Each step below has a picture you can play with, a short explanation, a question to pause on, and the exact lines from Ed's file.</p>
+</header>
+
+<section class="filemap" aria-labelledby="map-h">
+  <h2 id="map-h">The file at a glance</h2>
+  <p class="muted" style="max-width:38rem">175 lines and three classes. The yellow bar shows where each piece sits in the file.</p>
+  <ol class="map">
+    <li><span class="mini"><i style="left:0%;width:4.6%"></i></span><code>1-8</code><span>Imports: NumPy, PyTorch, and sklearn's <code>HashingVectorizer</code></span><span class="go"></span></li>
+    <li><span class="mini"><i style="left:5.7%;width:10.3%"></i></span><code>11-28</code><span><code>class ResidualBlock</code>: one building block of the network</span><span class="go"><a href="#step-5">Step 5</a></span></li>
+    <li><span class="mini"><i style="left:17.1%;width:15.4%"></i></span><code>31-57</code><span><code>class DeepNeuralNetwork</code>: the layers, stacked</span><span class="go"><a href="#step-3">3</a><a href="#step-4">4</a><a href="#step-6">6</a></span></li>
+    <li><span class="mini"><i style="left:33.7%;width:10.3%"></i></span><code>60-77</code><span><code>DeepNeuralNetworkRunner</code>: holds the data, fixes the random seeds at 42</span><span class="go"></span></li>
+    <li><span class="mini"><i style="left:44.6%;width:12.0%"></i></span><code>79-99</code><span><code>setup()</code>: text becomes numbers, prices become z-scores</span><span class="go"><a href="#step-1">1</a><a href="#step-2">2</a></span></li>
+    <li><span class="mini"><i style="left:57.1%;width:11.4%"></i></span><code>101-120</code><span><code>setup()</code>: build the model, pick the GPU, choose loss, optimizer and schedule</span><span class="go"><a href="#step-7">7</a><a href="#step-8">8</a></span></li>
+    <li><span class="mini"><i style="left:69.1%;width:21.1%"></i></span><code>122-158</code><span><code>train()</code>: the learning loop, then an honest check each epoch</span><span class="go"><a href="#step-8">8</a><a href="#step-9">9</a></span></li>
+    <li><span class="mini"><i style="left:90.9%;width:9.1%"></i></span><code>160-175</code><span><code>save()</code>, <code>load()</code>, <code>inference()</code>: price a new product</span><span class="go"><a href="#step-10">10</a></span></li>
+  </ol>
+</section>
+
+<!-- ======================= STEP 1 ======================= -->
+<section class="step" id="step-1" aria-labelledby="s1-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">1</span><div><span class="kicker">Step 1 &middot; lines 79-84</span><h2 id="s1-h">Words become a row of lights</h2></div></div>
+  <div class="prose">
+    <p>A neural network can only do arithmetic. It can't read. So the first puzzle is how to turn a paragraph into a fixed-length list of numbers.</p>
+    <p>Ed's answer is one line: <code>HashingVectorizer(n_features=5000, stop_words="english", binary=True)</code>. It does four things to every product summary:</p>
+    <ol>
+      <li>Lowercase everything and cut the text into words of two or more letters or digits.</li>
+      <li>Drop 318 very common <em>stop words</em> such as "and", "for" and "with".</li>
+      <li>Run each remaining word through a <strong>hash function</strong>, a fixed recipe that turns any word into a big number, and keep the remainder after dividing by 5,000. That gives every word a bucket from 0 to 4,999, and the same word always lands in the same bucket.</li>
+      <li>Light up those buckets. The other buckets stay at 0.</li>
+    </ol>
+  </div>
+
+  <figure class="stage" id="hash-stage">
+    <div class="controls" role="group" aria-label="Pick a sample product" id="hash-samples"></div>
+    <div class="field">
+      <label class="label" for="hash-text">Product summary (edit it, or type your own)</label>
+      <textarea id="hash-text" spellcheck="false"></textarea>
+    </div>
+    <div class="tokens" id="hash-tokens" aria-label="Words found, with the bucket each one lands in"></div>
+    <canvas id="hash-grid" aria-label="The 5,000 buckets drawn as a 100 by 50 grid, with this product's buckets lit"></canvas>
+    <div class="legend" aria-hidden="true"><span><i style="background:var(--yellow)"></i>lit bucket</span><span><i style="background:var(--red)"></i>two different words share it</span><span><i style="background:var(--cell)"></i>stays 0</span></div>
+    <p class="tip" id="hash-tip" aria-live="polite">Hover or tap a cell or a word to connect them.</p>
+    <dl class="readout" id="hash-readout"></dl>
+    <p class="small" id="hash-collide"></p>
+    <figcaption>The 5,000 buckets drawn as a 100 &times; 50 grid, reading left to right, top to bottom. This runs the same recipe as sklearn, checked against it on 150 products from the course's week 6 data.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p>Notice that every lit bucket holds the same value. <code>binary=True</code> sets each one to 1, then sklearn quietly divides the whole list by its length (its default L2 normalization). With 34 lit buckets, each one holds <span class="m">1/&radic;34 = 0.1715</span>. Longer descriptions spread the same total over more buckets.</p>
+    <p>Three consequences, decided before any learning happens:</p>
+    <ul>
+      <li><strong>Word order is gone.</strong> "noise cancelling headphones" and "headphones cancelling noise" light exactly the same cells. This is called a <em>bag of words</em>.</li>
+      <li><strong>Some words share a bucket.</strong> 5,000 buckets isn't many. In just 150 products from the course data, 389 buckets already hold two or more different words: "iphone" shares with "ideal", "ukulele" with "raspberry". Across 800,000 products every bucket is crowded, so the network can only learn what a bucket means on average.</li>
+      <li><strong>Nothing is learned here.</strong> The hash recipe is fixed, so it needs no training data and works the same on products it has never seen. That's why line 83 (<code>fit_transform</code>) and line 89 (<code>transform</code>) behave identically.</li>
+    </ul>
+    <p class="muted small">A quirk worth knowing: sklearn's stop list also throws away some useful product words, including "front", "side", "top", "full" and "system". A "front bumper" arrives as just "bumper".</p>
+  </div>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>Every product lights up buckets 2729, 2502, 4095, 3460 and 1106. Why, and does it help the network?</p>
+    <details><summary>Show the answer</summary><p>Those buckets belong to "title", "category", "brand", "description" and "details", the labels that start each line of every summary. A cell that's lit for every product can't tell any two products apart, so training learns to give it little weight. It's the hashing version of background noise.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 79-84</span></div>
+    <pre class="code" data-start="79" data-hl="80,83,84">    def setup(self):
+        self.vectorizer = HashingVectorizer(n_features=5000, stop_words="english", binary=True)
+
+        train_documents = [item.summary for item in self.train_data]
+        X_train_np = self.vectorizer.fit_transform(train_documents)
+        self.X_train = torch.FloatTensor(X_train_np.toarray())</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 2 ======================= -->
+<section class="step" id="step-2" aria-labelledby="s2-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">2</span><div><span class="kicker">Step 2 &middot; lines 85-99</span><h2 id="s2-h">Prices become friendly numbers</h2></div></div>
+  <div class="prose">
+    <p>Next we choose exactly what the network should guess. Raw dollars are a poor target. In a sample of 150 products from the course data, prices run from $8.08 to $849.99. A $10 miss on an $8 calendar is a disaster, while a $10 miss on an $850 guitar is excellent, yet in dollars both count the same, and the expensive products dominate the learning.</p>
+    <p>Ed reshapes the target in two moves:</p>
+    <ol>
+      <li><strong>Take the log</strong>, <span class="m">log(<i>price</i> + 1)</span>. Multiplying a price by 10 now just adds 2.3, so $8, $80 and $800 become evenly spaced at 2.2, 4.4 and 6.7. The +1 keeps a $0 price safe, because log(0) is undefined.</li>
+      <li><strong>Standardize</strong>: subtract the average log price, then divide by the spread (the standard deviation). A typical product now sits at 0, and most fall between &minus;2 and +2. Networks learn fastest when their targets live in that range.</li>
+    </ol>
+  </div>
+
+  <figure class="stage">
+    <div class="controls" role="group" aria-label="Choose the scale" id="price-modes">
+      <button class="btn" type="button" data-mode="dollars" aria-pressed="true"><span class="num">a</span>Dollars</button>
+      <button class="btn" type="button" data-mode="log" aria-pressed="false"><span class="num">b</span>log(price + 1)</button>
+      <button class="btn" type="button" data-mode="z" aria-pressed="false"><span class="num">c</span>z-score: what the network learns</button>
+    </div>
+    <div class="scroll-x"><svg id="price-svg" class="wide" viewBox="0 0 680 215" role="img" aria-label="Dot plot of 150 product prices on the selected scale"></svg></div>
+    <p class="caption" id="price-cap" aria-live="polite"></p>
+    <div class="field">
+      <div class="field-row"><label class="label" for="price-slider">Try any price</label><output id="price-out" for="price-slider">$240.00</output></div>
+      <input type="range" id="price-slider" min="0" max="1000" step="1" value="722">
+    </div>
+    <p class="eq" id="price-eq"></p>
+    <figcaption>Each dot is one of those 150 products. Switch the scale and watch the same dots move. The yellow dashed line follows the slider.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p class="muted small">Here the average (4.451) and spread (1.012) come from those 150 products. Ed's code computes the same two numbers from all 800,000 training products in lines 96-97, so his exact values differ a little.</p>
+  </div>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>The network outputs &minus;2.2 for some product. Roughly what price is it predicting?</p>
+    <details><summary>Show the answer</summary><p>Run the two moves backwards: <span class="m">&minus;2.2 &times; 1.012 + 4.451 = 2.22</span>, then <span class="m"><i>e</i><sup>2.22</sup> &minus; 1 &asymp; $8.2</span>. About the price of the hockey calendar.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 94-99</span></div>
+    <pre class="code" data-start="94" data-hl="94,96,97,98">        y_train_log = torch.log(self.y_train + 1)
+        y_val_log = torch.log(self.y_val + 1)
+        self.y_mean = y_train_log.mean()
+        self.y_std = y_train_log.std()
+        self.y_train_norm = (y_train_log - self.y_mean) / self.y_std
+        self.y_val_norm = (y_val_log - self.y_mean) / self.y_std</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 3 ======================= -->
+<section class="step" id="step-3" aria-labelledby="s3-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">3</span><div><span class="kicker">Step 3 &middot; lines 31-41</span><h2 id="s3-h">One neuron is a weighted vote</h2></div></div>
+  <div class="prose">
+    <p>Now 5,000 numbers go in, almost all of them 0. The first thing they meet is <code>nn.Linear(5000, 4096)</code> on line 37: a layer of 4,096 neurons.</p>
+    <p>A neuron is simple. It multiplies every input by its own <strong>weight</strong>, adds up the results, and adds one more number called the <strong>bias</strong>. A positive weight means "this input pushes me up", a negative one means "this input pushes me down". Training is nothing more than finding good weights.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="controls" role="group" aria-label="Switch words on and off" id="neuron-toggles"></div>
+    <div class="scroll-x"><svg id="neuron-svg" class="wide" viewBox="0 0 640 300" role="img" aria-label="Six inputs connected to one neuron by weighted lines"></svg></div>
+    <p class="eq" id="neuron-eq" aria-live="polite"></p>
+    <figcaption>One neuron and six of its 5,000 inputs. These weights are made up for illustration. Blue lines push up, red lines push down, and thicker means stronger. Each lit input holds 1/&radic;(number lit), just like Step 1.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p>Here's the shortcut worth remembering. Since nearly every input is 0, a neuron just <strong>adds up the weights of the words that are present</strong>.</p>
+    <p>Zoom out to all 4,096 neurons and each bucket effectively owns a column of 4,096 weights, one per neuron. A product's first-layer output is the sum of its words' columns. Training shapes those columns so that words signalling "expensive" end up pushing in similar directions. That's <span class="m">5,000 &times; 4,096 = 20,480,000</span> weights before the network has even started thinking.</p>
+  </div>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>This neuron has +0.9 for "wireless" and &minus;0.9 for "calendar". Which product makes it fire hardest, and what has it become?</p>
+    <details><summary>Show the answer</summary><p>One with many of the positive words and none of the negative ones, like the headphones. It has become a small "premium electronics" detector. Real neurons are rarely this tidy. Most respond to blends of many words, which is why we judge a network by its results rather than by reading neurons one at a time.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 31-41</span></div>
+    <pre class="code" data-start="31" data-hl="37">class DeepNeuralNetwork(nn.Module):
+    def __init__(self, input_size, num_layers=10, hidden_size=4096, dropout_prob=0.2):
+        super(DeepNeuralNetwork, self).__init__()
+
+        # First layer
+        self.input_layer = nn.Sequential(
+            nn.Linear(input_size, hidden_size),
+            nn.LayerNorm(hidden_size),
+            nn.ReLU(),
+            nn.Dropout(dropout_prob),
+        )</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 4 ======================= -->
+<section class="step" id="step-4" aria-labelledby="s4-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">4</span><div><span class="kicker">Step 4 &middot; lines 36-41</span><h2 id="s4-h">Three small tools after every sum</h2></div></div>
+  <div class="prose">
+    <p>The raw sums never go straight to the next layer. Line 37's <code>Linear</code> is followed by three small tools, and the same pattern repeats inside every block later on. Step through them and watch what each one does to the numbers.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="controls" role="group" aria-label="Choose a stage" id="layer-stages">
+      <button class="btn" type="button" data-stage="0" aria-pressed="true"><span class="num">1</span>Linear</button>
+      <button class="btn" type="button" data-stage="1" aria-pressed="false"><span class="num">2</span>LayerNorm</button>
+      <button class="btn" type="button" data-stage="2" aria-pressed="false"><span class="num">3</span>ReLU</button>
+      <button class="btn" type="button" data-stage="3" aria-pressed="false"><span class="num">4</span>Dropout</button>
+      <button class="btn" type="button" id="layer-reroll" disabled>New random dropout</button>
+    </div>
+    <div class="scroll-x"><svg id="layer-svg" class="wide" viewBox="0 0 660 270" role="img" aria-label="Bar chart of 32 neuron values at the selected stage"></svg></div>
+    <p class="caption" id="layer-cap" aria-live="polite"></p>
+    <figcaption>32 of the 4,096 numbers for one product, with made-up values. Blue bars are positive, red are negative.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <ul>
+      <li><strong>LayerNorm</strong> keeps every layer's numbers in a familiar range, so a change in the early layers doesn't knock the later ones off balance. It's a big reason a 10-layer network trains smoothly.</li>
+      <li><strong>ReLU</strong> is the bend. Without it, stacking <code>Linear</code> layers would be no more powerful than a single one, because a straight-line function of a straight-line function is still a straight line.</li>
+      <li><strong>Dropout</strong> is a training exercise. Any neuron might vanish on any step, so the network can't lean on a few of them, and it learns patterns that hold up on products it has never seen.</li>
+    </ul>
+  </div>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>Why does the code switch dropout off with <code>model.eval()</code> before predicting?</p>
+    <details><summary>Show the answer</summary><p>Dropout is practice with a handicap. When predicting you want the whole network's steady answer. With dropout still on, asking about the same product twice would give two different prices.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 36-41</span></div>
+    <pre class="code" data-start="36" data-hl="38,39,40">        self.input_layer = nn.Sequential(
+            nn.Linear(input_size, hidden_size),
+            nn.LayerNorm(hidden_size),
+            nn.ReLU(),
+            nn.Dropout(dropout_prob),
+        )</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 5 ======================= -->
+<section class="step" id="step-5" aria-labelledby="s5-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">5</span><div><span class="kicker">Step 5 &middot; lines 11-28 and 43-57</span><h2 id="s5-h">Residual blocks add a correction and keep the original</h2></div></div>
+  <div class="prose">
+    <p>Ed wants depth: <code>num_layers=10</code>. That's one input layer, then <code>num_layers - 2</code> = 8 residual blocks (line 45), then one output layer. Deep stacks of plain layers are hard to train, because the learning signal fades as it travels back through layer after layer.</p>
+    <p>Each block is a mini network of six pieces you've already met. The trick is line 27:</p>
+  </div>
+
+  <figure class="stage">
+    <p class="big-formula" aria-label="out equals F of x plus x"><i>out</i> = <span style="color:var(--yellow)"><i>F</i>(<i>x</i>)</span> + <span style="color:var(--teal)"><i>x</i></span></p>
+    <div class="scroll-x">
+      <svg class="wide" viewBox="0 0 800 170" role="img" aria-label="Inside a residual block: x goes through Linear, LayerNorm, ReLU, Dropout, Linear and LayerNorm to make F of x, while a copy of x skips around and is added back before a final ReLU.">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" class="arrowhead"/></marker>
+          <marker id="ah-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" class="arrowhead-teal"/></marker>
+        </defs>
+        <text x="16" y="96" class="t-teal" font-size="18" font-style="italic" font-family="STIX Two Text, Georgia, serif">x</text>
+        <path d="M30 90 H54" class="flow" marker-end="url(#ah)"/>
+        <path d="M38 90 V30 H632 V72" class="flow-teal" marker-end="url(#ah-teal)"/>
+        <text x="335" y="22" text-anchor="middle" font-size="13" class="t-teal">a copy of x skips the block (the skip connection)</text>
+        <rect x="56" y="70" width="70" height="40" rx="8" class="box"/><text x="91" y="95" text-anchor="middle" font-size="13">Linear</text>
+        <path d="M126 90 H140" class="flow" marker-end="url(#ah)"/>
+        <rect x="142" y="70" width="92" height="40" rx="8" class="box"/><text x="188" y="95" text-anchor="middle" font-size="13">LayerNorm</text>
+        <path d="M234 90 H248" class="flow" marker-end="url(#ah)"/>
+        <rect x="250" y="70" width="58" height="40" rx="8" class="box"/><text x="279" y="95" text-anchor="middle" font-size="13">ReLU</text>
+        <path d="M308 90 H322" class="flow" marker-end="url(#ah)"/>
+        <rect x="324" y="70" width="78" height="40" rx="8" class="box"/><text x="363" y="95" text-anchor="middle" font-size="13">Dropout</text>
+        <path d="M402 90 H416" class="flow" marker-end="url(#ah)"/>
+        <rect x="418" y="70" width="70" height="40" rx="8" class="box"/><text x="453" y="95" text-anchor="middle" font-size="13">Linear</text>
+        <path d="M488 90 H502" class="flow" marker-end="url(#ah)"/>
+        <rect x="504" y="70" width="92" height="40" rx="8" class="box"/><text x="550" y="95" text-anchor="middle" font-size="13">LayerNorm</text>
+        <path d="M596 90 H614" class="flow" marker-end="url(#ah)"/>
+        <circle cx="632" cy="90" r="16" class="box-hot"/><text x="632" y="96" text-anchor="middle" font-size="18" class="t-yellow">+</text>
+        <path d="M648 90 H666" class="flow" marker-end="url(#ah)"/>
+        <rect x="668" y="70" width="58" height="40" rx="8" class="box"/><text x="697" y="95" text-anchor="middle" font-size="13">ReLU</text>
+        <path d="M726 90 H780" class="flow" marker-end="url(#ah)"/>
+        <text x="753" y="80" text-anchor="middle" font-size="12" class="t-muted">out</text>
+        <path d="M56 124 V130 H596 V124" class="axis"/>
+        <text x="326" y="150" text-anchor="middle" font-size="13" class="t-yellow">F(x): the correction this block learns (lines 14-21)</text>
+        <text x="632" y="132" text-anchor="middle" font-size="12" class="t-muted">line 27</text>
+      </svg>
+    </div>
+    <figcaption>One residual block. The six boxes compute the correction F(x); the teal path carries the original x around them untouched. The two meet at the + on line 27.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p>The block doesn't replace its input. It computes a correction <span class="m"><i>F</i>(<i>x</i>)</span> and adds it to the original. If the best move is to change nothing, the block only has to learn to output zeros, which is easy.</p>
+    <p>Why this matters, in one line of calculus: the slope of <span class="m"><i>F</i>(<i>x</i>) + <i>x</i></span> is <span class="m"><i>F</i>&prime;(<i>x</i>) + 1</span>. That <strong>+ 1</strong> is a highway. However small <span class="m"><i>F</i>&prime;</span> gets, the learning signal has a route back to the early layers where nothing is lost. Toggle it below.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="controls" role="group" aria-label="Skip connections" id="hw-toggle">
+      <button class="btn" type="button" data-skip="1" aria-pressed="true">With skip connections</button>
+      <button class="btn" type="button" data-skip="0" aria-pressed="false">Without</button>
+    </div>
+    <div class="scroll-x"><svg id="hw-svg" class="wide" viewBox="0 0 660 230" role="img" aria-label="How much learning signal reaches each layer"></svg></div>
+    <figcaption>An illustration, not a measurement: the learning signal flows from the output back towards the input. Without skips, assume each block passes back 55% of what it receives. With skips, the + x path passes back everything.</figcaption>
+  </figure>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>Suppose a block learns nothing useful and <span class="m"><i>F</i>(<i>x</i>)</span> is all zeros. What comes out of the block?</p>
+    <details><summary>Show the answer</summary><p><span class="m">ReLU(0 + <i>x</i>) = ReLU(<i>x</i>)</span>, and since the <i>x</i> coming in has already been through a ReLU, it has no negatives, so it passes through unchanged. A useless block costs compute, not accuracy, which is what makes it safe to stack many of them.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 11-28</span></div>
+    <pre class="code" data-start="11" data-hl="25,26,27">class ResidualBlock(nn.Module):
+    def __init__(self, hidden_size, dropout_prob):
+        super(ResidualBlock, self).__init__()
+        self.block = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.LayerNorm(hidden_size),
+            nn.ReLU(),
+            nn.Dropout(dropout_prob),
+            nn.Linear(hidden_size, hidden_size),
+            nn.LayerNorm(hidden_size),
+        )
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        residual = x
+        out = self.block(x)
+        out += residual  # Skip connection
+        return self.relu(out)</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 43-57</span></div>
+    <pre class="code" data-start="43" data-hl="45,54,55">        # Residual blocks
+        self.residual_blocks = nn.ModuleList()
+        for i in range(num_layers - 2):
+            self.residual_blocks.append(ResidualBlock(hidden_size, dropout_prob))
+
+        # Output layer
+        self.output_layer = nn.Linear(hidden_size, 1)
+
+    def forward(self, x):
+        x = self.input_layer(x)
+
+        for block in self.residual_blocks:
+            x = block(x)
+
+        return self.output_layer(x)</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 6 ======================= -->
+<section class="step" id="step-6" aria-labelledby="s6-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">6</span><div><span class="kicker">Step 6 &middot; lines 49 and 172-175</span><h2 id="s6-h">From 4,096 numbers back to a price</h2></div></div>
+  <div class="prose">
+    <p>After the last block, <code>nn.Linear(4096, 1)</code> on line 49 takes one final weighted vote over the 4,096 numbers and produces a single number: the predicted z-score of the log price from Step 2. To turn it into dollars, line 173 runs Step 2 backwards.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="chain">
+      <div class="card first"><span class="label">network says</span><span class="v">+1.021</span><span class="d">a z-score</span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">undo z</span><span class="v">5.485</span><span class="d">&times; 1.0119 + 4.4514<br><code>pred * y_std + y_mean</code></span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">undo log</span><span class="v">241.0</span><span class="d">e<sup>5.485</sup><br><code>torch.exp(&hellip;)</code></span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">undo + 1</span><span class="v">240.0</span><span class="d">241.0 &minus; 1<br><code>&hellip; - 1</code></span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">no negatives</span><span class="v money">$240.00</span><span class="d"><code>max(0, result)</code></span></div>
+    </div>
+    <figcaption>The Bose headphones as an example: if the network's single output were +1.021, this is the path back to $240.00 (using the sample average 4.4514 and spread 1.0119 from Step 2).</figcaption>
+  </figure>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>Why does line 175 wrap the answer in <code>max(0, result)</code>?</p>
+    <details><summary>Show the answer</summary><p>The output layer can produce any number at all. If it predicts a z so low that the log price comes out below 0, then <span class="m"><i>e</i><sup>(that)</sup> &minus; 1</span> is slightly negative, and a negative price makes no sense. <code>max(0, &hellip;)</code> clips it to $0.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 167-175</span></div>
+    <pre class="code" data-start="167" data-hl="172,173,175">    def inference(self, item):
+        self.model.eval()
+        with torch.no_grad():
+            vector = self.vectorizer.transform([item.summary])
+            vector = torch.FloatTensor(vector.toarray()).to(self.device)
+            pred = self.model(vector)[0]
+            result = torch.exp(pred * self.y_std + self.y_mean) - 1
+            result = result.item()
+        return max(0, result)</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 7 ======================= -->
+<section class="step" id="step-7" aria-labelledby="s7-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">7</span><div><span class="kicker">Step 7 &middot; lines 101-103</span><h2 id="s7-h">Where 289 million numbers live</h2></div></div>
+  <div class="prose">
+    <p>Line 103 prints the size of the network: 289,128,449 parameters. Every one is a weight or a bias that training adjusts. Here's where they live, and what happens when you change the two size knobs from line 32.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="pc-grid">
+      <div class="field">
+        <div class="field-row"><label class="label" for="pc-h">hidden_size</label><output id="pc-h-out" for="pc-h">4,096</output></div>
+        <input type="range" id="pc-h" min="0" max="4" step="1" value="3">
+      </div>
+      <div class="field">
+        <div class="field-row"><label class="label" for="pc-l">num_layers</label><output id="pc-l-out" for="pc-l">10</output></div>
+        <input type="range" id="pc-l" min="3" max="12" step="1" value="10">
+      </div>
+    </div>
+    <p class="pc-total" aria-live="polite"><b id="pc-total" style="font-weight:600">289,128,449</b> <span>parameters</span></p>
+    <div class="pc-bar" id="pc-bar" aria-hidden="true"></div>
+    <div class="pc-legend" id="pc-legend"></div>
+    <dl class="readout" id="pc-readout"></dl>
+    <figcaption>The bar is drawn to scale. Each yellow segment is one residual block; the output layer is too small to see.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <ul>
+      <li><strong>Input layer:</strong> 5,000 &times; 4,096 weights + 4,096 biases + 8,192 LayerNorm values = 20,492,288 (7%).</li>
+      <li><strong>Each residual block:</strong> two 4,096 &times; 4,096 grids of 16,777,216 weights, plus biases and LayerNorm values = 33,579,008. Eight blocks make 268,632,064 (93%).</li>
+      <li><strong>Output layer:</strong> 4,096 weights + 1 bias = 4,097.</li>
+    </ul>
+    <p>Each parameter is a 32-bit float, 4 bytes, so the saved weights file is about 1.16 GB. Training needs about four times that, roughly 4.6 GB, because it also keeps a gradient and two AdamW running averages for every parameter.</p>
+  </div>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>Halve <code>hidden_size</code> to 2,048. Do you get half the parameters? Predict, then try it with the slider.</p>
+    <details><summary>Show the answer</summary><p>No. The blocks shrink to about a quarter, because each block's grids are <code>hidden_size</code> &times; <code>hidden_size</code>. The total drops from 289 million to about 77 million. Width is the expensive knob; depth grows the count in a straight line.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 101-103</span></div>
+    <pre class="code" data-start="101" data-hl="102">        self.model = DeepNeuralNetwork(self.X_train.shape[1])
+        total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        print(f"Deep Neural Network created with {total_params:,} parameters")</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 8 ======================= -->
+<section class="step" id="step-8" aria-labelledby="s8-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">8</span><div><span class="kicker">Step 8 &middot; lines 105-140 and 158</span><h2 id="s8-h">Learning means nudging every number downhill</h2></div></div>
+  <div class="prose">
+    <p>So far the 289 million numbers are random, and the guesses are nonsense. Learning happens in a loop, and it needs three ingredients: a score for how wrong a guess is, a way to find which direction makes it less wrong, and a step size.</p>
+    <h3 class="sub">How wrong is a guess?</h3>
+    <p>Line 115 picks <code>nn.L1Loss()</code>: the average of <span class="m">|<i>prediction</i> &minus; <i>truth</i>|</span>, measured in z-units. Why absolute error instead of the more common squared error? Drag the dots.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="scroll-x"><svg id="mm-svg" class="wide" viewBox="0 0 640 190" role="img" aria-label="Seven prices on a number line with the mean and median marked"></svg></div>
+    <p class="eq" id="mm-eq" aria-live="polite"></p>
+    <figcaption>Seven prices. Drag any dot, or focus it and use the arrow keys. Try dragging the $240 dot far to the right.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p>The single guess that makes the total absolute error smallest is the <strong>median</strong>. Squared error picks the <strong>mean</strong>, and one expensive outlier can drag the mean anywhere. There's a bonus: the log and the standardizing from Step 2 never change which price is in the middle, so predicting the median z is the same as predicting the median price. And the median is exactly the guess that minimizes average dollar error, the number Ed's evaluator reports.</p>
+    <h3 class="sub">One step of learning</h3>
+  </div>
+
+  <figure class="stage">
+    <div class="scroll-x">
+      <svg class="wide" viewBox="0 0 720 260" role="img" aria-label="The training loop: take 64 shuffled products, clear old nudges and predict, measure the miss, find the downhill direction, cap the step size, move every weight a little, then repeat.">
+        <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" class="arrowhead"/></marker></defs>
+        <rect x="30" y="24" width="200" height="64" rx="10" class="box"/>
+        <text x="130" y="51" text-anchor="middle" font-size="13.5">Take 64 shuffled products</text>
+        <text x="130" y="72" text-anchor="middle" font-size="11" class="t-muted t-mono">train_loader, batch_size=64</text>
+        <rect x="260" y="24" width="200" height="64" rx="10" class="box"/>
+        <text x="360" y="51" text-anchor="middle" font-size="13.5">Clear old nudges, predict</text>
+        <text x="360" y="72" text-anchor="middle" font-size="11" class="t-muted t-mono">zero_grad() &#183; model(batch_X)</text>
+        <rect x="490" y="24" width="200" height="64" rx="10" class="box"/>
+        <text x="590" y="51" text-anchor="middle" font-size="13.5">Measure the miss</text>
+        <text x="590" y="72" text-anchor="middle" font-size="11" class="t-muted t-mono">L1 loss, one number</text>
+        <rect x="490" y="168" width="200" height="64" rx="10" class="box-hot"/>
+        <text x="590" y="195" text-anchor="middle" font-size="13.5">Find the downhill direction</text>
+        <text x="590" y="216" text-anchor="middle" font-size="11" class="t-muted t-mono">loss.backward()</text>
+        <rect x="260" y="168" width="200" height="64" rx="10" class="box"/>
+        <text x="360" y="195" text-anchor="middle" font-size="13.5">Cap the step size</text>
+        <text x="360" y="216" text-anchor="middle" font-size="11" class="t-muted t-mono">clip_grad_norm_, max 1.0</text>
+        <rect x="30" y="168" width="200" height="64" rx="10" class="box"/>
+        <text x="130" y="195" text-anchor="middle" font-size="13.5">Move every weight a little</text>
+        <text x="130" y="216" text-anchor="middle" font-size="11" class="t-muted t-mono">optimizer.step(), AdamW</text>
+        <path d="M232 56 H256" class="flow" marker-end="url(#ah2)"/>
+        <path d="M462 56 H486" class="flow" marker-end="url(#ah2)"/>
+        <path d="M590 90 V164" class="flow" marker-end="url(#ah2)"/>
+        <path d="M488 200 H464" class="flow" marker-end="url(#ah2)"/>
+        <path d="M258 200 H234" class="flow" marker-end="url(#ah2)"/>
+        <path d="M130 166 V92" class="flow" marker-end="url(#ah2)"/>
+        <text x="360" y="122" text-anchor="middle" font-size="13" class="t-yellow">one step, about 1 in 62,500</text>
+        <text x="360" y="142" text-anchor="middle" font-size="12" class="t-muted">12,500 steps per epoch &#215; 5 epochs</text>
+      </svg>
+    </div>
+    <figcaption>Lines 127-140. <code>loss.backward()</code> is the expensive part: it works out, for each of the 289 million numbers, which way to nudge it to make this batch's miss smaller.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p>Each pass around the loop handles 64 products (line 120), shuffled into a new order every epoch. With 800,000 products that's 12,500 steps per epoch, and Ed runs 5 epochs: 62,500 steps, about 4 hours on his M1 Mac's GPU, the <code>mps</code> device that lines 105-110 pick when there's no NVIDIA card.</p>
+    <h3 class="sub">The learning rate is the step size</h3>
+    <p>The gradient says which way is downhill. The learning rate says how far to step. Here's the same idea with a made-up model that has just one number to learn, so we can see the whole valley.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="field">
+      <div class="field-row"><label class="label" for="gd-lr">learning rate</label><output id="gd-lr-out" for="gd-lr">0.30</output></div>
+      <input type="range" id="gd-lr" min="0.05" max="2.2" step="0.05" value="0.3">
+    </div>
+    <div class="controls">
+      <button class="btn" type="button" id="gd-step">Take one step</button>
+      <button class="btn" type="button" id="gd-run">Take 10 steps</button>
+      <button class="btn" type="button" id="gd-reset">Start over</button>
+    </div>
+    <div class="scroll-x"><svg id="gd-svg" class="wide" viewBox="0 0 640 250" role="img" aria-label="A ball stepping down a valley-shaped loss curve"></svg></div>
+    <p class="eq" id="gd-eq" aria-live="polite"></p>
+    <figcaption>A one-number toy, not Ed's network. Try 0.1, then 1.0, then 1.8, then 2.1. The real optimizer does this in 289 million directions at once.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p>AdamW (line 116) starts from <code>lr=0.001</code> and adapts the step for each number individually, taking bigger steps where the slope has been consistent. <code>weight_decay=0.01</code> also pulls every weight slightly towards 0 on each step, another guard against memorizing. Line 137 caps the total step at length 1.0 (gradient clipping), so one strange batch can't fling the weights off course.</p>
+    <h3 class="sub">Shrinking the steps over time</h3>
+    <p>Line 117's cosine schedule lowers the learning rate along a smooth curve: big steps early to make progress, small steps late to settle into a good spot. It's updated once per epoch (line 158).</p>
+  </div>
+
+  <figure class="stage">
+    <div class="scroll-x">
+      <svg class="wide" viewBox="0 0 640 250" role="img" aria-label="Learning rate per epoch. Ed's T_max of 10 only falls to 65 percent of the start by epoch 5; a T_max of 5 falls to about 10 percent.">
+        <line x1="80" y1="210" x2="610" y2="210" class="axis"/>
+        <line x1="80" y1="167.5" x2="610" y2="167.5" class="gridline"/>
+        <line x1="80" y1="125" x2="610" y2="125" class="gridline"/>
+        <line x1="80" y1="82.5" x2="610" y2="82.5" class="gridline"/>
+        <line x1="80" y1="40" x2="610" y2="40" class="gridline"/>
+        <text x="72" y="214" text-anchor="end" font-size="11.5" class="t-muted t-mono">0</text>
+        <text x="72" y="171.5" text-anchor="end" font-size="11.5" class="t-muted t-mono">0.00025</text>
+        <text x="72" y="129" text-anchor="end" font-size="11.5" class="t-muted t-mono">0.0005</text>
+        <text x="72" y="86.5" text-anchor="end" font-size="11.5" class="t-muted t-mono">0.00075</text>
+        <text x="72" y="44" text-anchor="end" font-size="11.5" class="t-muted t-mono">0.001</text>
+        <text x="133" y="232" text-anchor="middle" font-size="12" class="t-muted">epoch 1</text>
+        <text x="239" y="232" text-anchor="middle" font-size="12" class="t-muted">epoch 2</text>
+        <text x="345" y="232" text-anchor="middle" font-size="12" class="t-muted">epoch 3</text>
+        <text x="451" y="232" text-anchor="middle" font-size="12" class="t-muted">epoch 4</text>
+        <text x="557" y="232" text-anchor="middle" font-size="12" class="t-muted">epoch 5</text>
+        <path d="M80 40 H186 V56.15 H292 V98.65 H398 V151.35 H504 V193.85 H610" fill="none" stroke="var(--teal)" stroke-width="2.4" stroke-dasharray="7 5"/>
+        <path d="M80 40 H186 V44.08 H292 V56.15 H398 V75.02 H504 V98.65 H610" fill="none" stroke="var(--yellow)" stroke-width="3"/>
+        <text x="557" y="90" text-anchor="middle" font-size="12.5" class="t-yellow t-mono">65%</text>
+        <text x="557" y="185" text-anchor="middle" font-size="12.5" class="t-teal t-mono">10%</text>
+      </svg>
+    </div>
+    <div class="legend" aria-hidden="true"><span><i style="background:var(--yellow)"></i>Ed's file, T_max=10</span><span><i style="background:var(--teal)"></i>T_max=5, the full curve</span></div>
+    <figcaption>Learning rate during each epoch, from PyTorch's cosine formula. Ed's file sets the curve's length to 10 epochs but trains for 5, so it never reaches the slow, settling end.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <p>Letting the rate wind down often gives a slightly better final model. It hasn't been tested on this one, so treat it as an idea to try, not a known fix.</p>
+  </div>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>Why reshuffle the products every epoch (<code>shuffle=True</code> on line 120)?</p>
+    <details><summary>Show the answer</summary><p>If batches always arrived in the same order, say all the car parts together, each step would pull the weights towards one kind of product and the next would pull them back. Shuffling makes every batch a fair mini-sample of all 800,000 products, so each nudge points in a more trustworthy direction.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 114-120</span></div>
+    <pre class="code" data-start="114" data-hl="115,116,117,120">        self.model.to(self.device)
+        self.loss_function = nn.L1Loss()
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=0.001, weight_decay=0.01)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=10, eta_min=0)
+
+        self.train_dataset = TensorDataset(self.X_train, self.y_train_norm)
+        self.train_loader = DataLoader(self.train_dataset, batch_size=64, shuffle=True)</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 122-140</span></div>
+    <pre class="code" data-start="122" data-hl="131,132,133,134,137,139">    def train(self, epochs=5):
+        for epoch in range(1, epochs + 1):
+            self.model.train()
+            train_losses = []
+
+            for batch_X, batch_y in tqdm(self.train_loader):
+                batch_X = batch_X.to(self.device)
+                batch_y = batch_y.to(self.device)
+
+                self.optimizer.zero_grad()
+                outputs = self.model(batch_X)
+                loss = self.loss_function(outputs, batch_y)
+                loss.backward()
+
+                # Gradient clipping
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+
+                self.optimizer.step()
+                train_losses.append(loss.item())</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 9 ======================= -->
+<section class="step" id="step-9" aria-labelledby="s9-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">9</span><div><span class="kicker">Step 9 &middot; lines 142-158</span><h2 id="s9-h">Checking honestly after every epoch</h2></div></div>
+  <div class="prose">
+    <p>Getting better on the training products isn't the goal. Getting better on products it has never seen is. So after every epoch the code switches to exam mode:</p>
+    <ul>
+      <li><code>model.eval()</code> turns dropout off.</li>
+      <li><code>torch.no_grad()</code> skips the gradient bookkeeping, since nothing will be updated.</li>
+      <li>It predicts 1,000 validation products that were held out of training (<code>val[:1000]</code> in Ed's notebook) and scores them with the same L1 loss.</li>
+      <li>Line 149 converts the predictions back to dollars, so the printout also shows a number a human can feel.</li>
+    </ul>
+  </div>
+
+  <figure class="stage">
+    <div class="term" role="img" aria-label="Ed's real printout after epoch 1: train loss 0.5463, validation loss 0.4324, validation mean absolute error $58.26, learning rate 0.001.">Epoch [1/5]
+Train Loss: 0.5463, Val Loss: 0.4324   <span class="pin">&larr; both in z-units</span>
+Val mean absolute error: $58.26        <span class="pin">&larr; the same predictions, in dollars</span>
+Learning rate: 0.001000                <span class="pin">&larr; epoch 1 of the cosine curve</span></div>
+    <figcaption>Ed's real printout after the first of 5 epochs, from <code>week6/redemption_train.ipynb</code> in the course repository. After all 5 epochs, the network's error on the 200 test products was $46.49.</figcaption>
+  </figure>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>After epoch 1 the validation loss (0.4324) is lower than the training loss (0.5463). Shouldn't a network do better on the data it trained on?</p>
+    <details><summary>Show the answer</summary><p>Two effects. The training loss is averaged over the whole epoch, including the early steps when the network was still poor, while validation is measured at the end. And during training, dropout handicaps the network by silencing 20% of its neurons; validation runs at full strength.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 142-158</span></div>
+    <pre class="code" data-start="142" data-hl="143,144,149,158">            # Validation
+            self.model.eval()
+            with torch.no_grad():
+                val_outputs = self.model(self.X_val.to(self.device))
+                val_loss = self.loss_function(val_outputs, self.y_val_norm.to(self.device))
+
+                # Convert back to original scale for meaningful metrics
+                val_outputs_orig = torch.exp(val_outputs * self.y_std + self.y_mean) - 1
+                mae = torch.abs(val_outputs_orig - self.y_val.to(self.device)).mean()
+
+            avg_train_loss = np.mean(train_losses)
+            print(f"Epoch [{epoch}/{epochs}]")
+            print(f"Train Loss: {avg_train_loss:.4f}, Val Loss: {val_loss.item():.4f}")
+            print(f"Val mean absolute error: ${mae.item():.2f}")
+            print(f"Learning rate: {self.scheduler.get_last_lr()[0]:.6f}")
+
+            self.scheduler.step()</pre>
+  </div>
+</section>
+
+<!-- ======================= STEP 10 ======================= -->
+<section class="step" id="step-10" aria-labelledby="s10-h">
+  <div class="step-head"><span class="step-num" aria-hidden="true">10</span><div><span class="kicker">Step 10 &middot; lines 160-175</span><h2 id="s10-h">Pricing a product it has never seen</h2></div></div>
+  <div class="prose">
+    <p>Once trained, the weights are saved to a file (<code>save</code>, line 161, about 1.16 GB) and loaded later (<code>load</code>, line 164). <code>map_location</code> lets weights trained on Ed's Mac GPU load onto a machine with only a CPU. Then <code>inference</code> runs everything from Steps 1 to 6 in one pass.</p>
+  </div>
+
+  <figure class="stage">
+    <div class="chain">
+      <div class="card first"><span class="label">text</span><span class="v">Bose QC35</span><span class="d">39 words after stop words</span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">step 1</span><span class="v">34 of 5,000</span><span class="d">buckets lit, 0.1715 each</span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">steps 3-4</span><span class="v">4,096</span><span class="d">numbers after the input layer</span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">step 5</span><span class="v">8 blocks</span><span class="d">each adds a correction</span></div>
+      <span class="to" aria-hidden="true">&rarr;</span>
+      <div class="card"><span class="label">step 6</span><span class="v money">$ price</span><span class="d">1 number, then undo z and log</span></div>
+    </div>
+    <figcaption>The whole forward pass for one product. <code>model.eval()</code> keeps dropout off and <code>torch.no_grad()</code> skips gradient bookkeeping, so it's fast.</figcaption>
+  </figure>
+
+  <div class="ponder">
+    <span class="p-label">Pause and ponder</span>
+    <p>A product mentions a word that never appeared in the 800,000 training summaries. What does the network do with it?</p>
+    <details><summary>Show the answer</summary><p>The hash still sends it to some bucket, and that bucket's weights were trained on whichever other words share it. So the new word borrows the average meaning of its bucket-mates. Hashing never fails on an unknown word, but it can quietly mislead.</p></details>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span>pricer/deep_neural_network.py</span><span>lines 160-171</span></div>
+    <pre class="code" data-start="160" data-hl="161,164,168,169,170">    def save(self, path):
+        torch.save(self.model.state_dict(), path)
+
+    def load(self, path, device="mps"):
+        self.model.load_state_dict(torch.load(path, map_location=device))
+        self.model.to(self.device)
+
+    def inference(self, item):
+        self.model.eval()
+        with torch.no_grad():
+            vector = self.vectorizer.transform([item.summary])
+            vector = torch.FloatTensor(vector.toarray()).to(self.device)</pre>
+  </div>
+</section>
+
+<!-- ======================= CLOSING ======================= -->
+<section class="closing" id="results" aria-labelledby="r-h">
+  <h2 id="r-h">Was it worth it?</h2>
+  <div class="prose">
+    <p>Ed built this network to, in his words, "redeem ourselves" after fine-tuning GPT-4.1-nano disappointed. Here's how everything in Week 6 scored on the same 200 test products, as average dollar error. Shorter bars are better.</p>
+  </div>
+  <figure class="stage">
+    <div class="bars" id="results-bars"></div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="c-scratch"></i>trained from scratch</span>
+      <span><i class="c-frontier"></i>frontier model, no training</span>
+      <span><i class="c-ft"></i>frontier model, fine-tuned</span>
+      <span><i class="c-ml"></i>classic machine learning</span>
+      <span><i class="c-human"></i>a human</span>
+    </div>
+    <figcaption>From Ed's <code>week6/results.ipynb</code>. Same dataset and the same evaluator for every row.</figcaption>
+  </figure>
+  <div class="prose">
+    <p>A network trained from scratch, with no idea what headphones are, nearly matched GPT-5.1 and beat the fine-tuned GPT-4.1-nano by about $29 per product. With 800,000 labelled examples of one narrow task, a purpose-built model can stand toe to toe with the frontier.</p>
+  </div>
+
+  <h3>Four things a careful reader notices</h3>
+  <ol class="notes">
+    <li><strong>Memory.</strong> Line 84 turns the 800,000 &times; 5,000 sparse matrix into a dense one: 32 GB as 64-bit floats, plus a 16 GB 32-bit copy, about 48 GB at peak. That's far more memory than a typical laptop has. The fix is to keep the matrix sparse and convert one batch at a time.</li>
+    <li><strong>The schedule never winds down.</strong> <code>T_max=10</code> with 5 epochs leaves the learning rate at 65% (Step 8).</li>
+    <li><strong>"binary" isn't 0 and 1.</strong> The default L2 normalization makes each lit bucket 1/&radic;<i>k</i> (Step 1). Adding <code>norm=None</code> would give true 0/1 values.</li>
+    <li><strong>5,000 buckets collide a lot.</strong> 389 shared buckets in just 150 products (Step 1). With sparse input you could afford far more buckets.</li>
+  </ol>
+
+  <h3>Can you explain these without scrolling up?</h3>
+  <div class="recap">
+    <details><summary>Why predict a z-score of log(price + 1) instead of dollars?</summary><p>So a $10 miss on a cheap item counts for more than on an expensive one, and so the targets sit near 0, where training is easiest. Line 173 undoes it at the end.</p></details>
+    <details><summary>Why L1 loss instead of squared error?</summary><p>Absolute error is minimized by the median, which outliers can't drag around. The median z maps to the median price, and the median price is the guess that minimizes average dollar error, the metric being reported.</p></details>
+    <details><summary>What does <code>out += residual</code> buy you?</summary><p>Each block learns a correction instead of a replacement, and the + x gives the learning signal a lossless route back through all 8 blocks.</p></details>
+    <details><summary>Where do the 289 million parameters come from?</summary><p>Mostly from sixteen 4,096 &times; 4,096 weight grids, two per residual block, 268.6 million in all. The input layer adds 20.5 million.</p></details>
+    <details><summary>Why could this beat a fine-tuned GPT-4.1-nano?</summary><p>It trained on 800,000 examples instead of at most 20,000, every one of its parameters works on this one task, and it outputs a number directly with a loss that matches the metric. A language model writes the price as text tokens, where "99" and "100" look nothing alike.</p></details>
+  </div>
+</section>
+
+</main>
+<footer class="credits small muted" style="padding-top:64px;max-width:42rem">
+  <p><strong>How the numbers were made.</strong> Step 1 runs the same recipe as sklearn's <code>HashingVectorizer</code> (MurmurHash3 into 5,000 buckets), checked against sklearn on 150 products from the course data, with identical buckets and values. The price average and spread come from those same 150 products. The training printout and the results chart come from Ed's notebooks. The weights in Steps 3 and 4 and the 55% in Step 5 are illustrations, because the trained weights aren't published with the course.</p>
+  <p><strong>Credits.</strong> The network, the training code and every code excerpt on this page come from Ed Donner's <a href="https://github.com/ed-donner/llm_engineering">LLM Engineering course repository</a>, copyright 2024 Ed Donner, under the MIT License. The sample products and prices come from Ed's public <a href="https://huggingface.co/datasets/ed-donner/items_full">items dataset on Hugging Face</a>. The visual style is a nod to 3Blue1Brown.</p>
+  <details><summary>MIT License for Ed Donner's code</summary><pre>MIT License
+
+Copyright (c) 2024 Ed Donner
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre></details>
+  <div class="site-foot"><span>Raghvendra Rao Koduri, 2026</span><nav aria-label="Elsewhere"><a href="https://github.com/raghu619">GitHub</a><a href="https://www.linkedin.com/in/raghvendra-rao-koduri-6b339595/">LinkedIn</a></nav></div>
+</footer>
+
+</div>
+
+<script>
+(() => {
+"use strict";
+const DATA = {"stop": "a about above across after afterwards again against all almost alone along already also although always am among amongst amoungst amount an and another any anyhow anyone anything anyway anywhere are around as at back be became because become becomes becoming been before beforehand behind being below beside besides between beyond bill both bottom but by call can cannot cant co con could couldnt cry de describe detail do done down due during each eg eight either eleven else elsewhere empty enough etc even ever every everyone everything everywhere except few fifteen fifty fill find fire first five for former formerly forty found four from front full further get give go had has hasnt have he hence her here hereafter hereby herein hereupon hers herself him himself his how however hundred i ie if in inc indeed interest into is it its itself keep last latter latterly least less ltd made many may me meanwhile might mill mine more moreover most mostly move much must my myself name namely neither never nevertheless next nine no nobody none noone nor not nothing now nowhere of off often on once one only onto or other others otherwise our ours ourselves out over own part per perhaps please put rather re same see seem seemed seeming seems serious several she should show side since sincere six sixty so some somehow someone something sometime sometimes somewhere still such system take ten than that the their them themselves then thence there thereafter thereby therefore therein thereupon these they thick thin third this those though three through throughout thru thus to together too top toward towards twelve twenty two un under until up upon us very via was we well were what whatever when whence whenever where whereafter whereas whereby wherein whereupon wherever whether which while whither who whoever whole whom whose why will with within without would yet you your yours yourself yourselves", "samples": [{"name": "Bose headphones", "price": 240.0, "text": "Title: Bose QuietComfort 35 I Wireless Noise Cancelling Headphones  \nCategory: Electronics  \nBrand: Bose  \nDescription: Premium wireless headphones delivering industry\u2011leading noise cancellation and balanced audio for immersive listening.  \nDetails: Bluetooth and NFC pairing, dual\u2011microphone call clarity, up to 20\u202fhours battery life, and a lightweight, comfortable design."}, {"name": "Hockey wall calendar", "price": 8.08, "text": "Title: LANG 2020 Hockey Wall Calendar  \nCategory: Home & Garden > D\u00e9cor > Wall Calendars  \nBrand: Lang  \nDescription: A full\u2011color wall calendar featuring monthly artwork of hockey scenes by D.\u202fR.\u202fLaird.  \nDetails: 12 elegant linen\u2011embossed pages with brass grommets, plus a matching gift jacket."}, {"name": "Fender Stratocaster", "price": 849.99, "text": "Title: Fender Player Stratocaster \u2013 Sherwood Green Metallic  \nCategory: Guitar  \nBrand: Fender  \nDescription: A classic Stratocaster with a sleek Sherwood Green Metallic finish.  \nDetails: Features an alder body, maple and alder tops, three single\u2011coil pickups, a 25.5\u2011inch scale, and a 9.5\u2011radius fingerboard."}, {"name": "Leather iPhone case", "price": 39.99, "text": "Title: Docco Jette Leather iPhone 13 Pro Case with MagSafe  \nCategory: Accessories  \nBrand: Docco Jette  \nDescription: A premium Italian Nappa leather case for iPhone 13 Pro with built\u2011in magnets for seamless MagSafe charging.  \nDetails: Features raised lip protection, alloy buttons, precise cutouts, and a velvety interior lining for drop resistance up to 6\u202fft."}, {"name": "Garmin running watch", "price": 454.99, "text": "Title: Garmin Forerunner 265 Running GPS Smartwatch  \nCategory: Electronics  \nBrand: Garmin  \nDescription: A lightweight GPS smartwatch with a bright 1.3\u2011inch AMOLED display for accurate running metrics and recovery insights.  \nDetails: Features up to 20 hours of battery life, GPS navigation, phone\u2011free music, Garmin Pay, and a bundled 5000\u202fmAh portable charger with HD screen protectors."}], "prices": [64.3, 79.0, 240.0, 449.0, 79.99, 89.99, 174.99, 74.64, 39.99, 25.0, 284.66, 79.18, 729.96, 39.98, 194.93, 79.99, 249.99, 75.0, 88.1, 220.24, 26.98, 8.08, 399.99, 17.97, 199.0, 42.99, 83.99, 46.99, 319.99, 14.99, 84.69, 49.99, 454.99, 744.7, 240.95, 13.99, 120.16, 60.85, 80.21, 28.9, 34.99, 719.99, 34.99, 159.0, 34.48, 309.67, 58.84, 89.99, 51.76, 69.99, 259.0, 39.99, 99.0, 197.99, 236.42, 19.99, 29.44, 400.99, 109.99, 26.99, 96.99, 68.15, 510.0, 99.99, 64.95, 95.06, 124.99, 51.49, 236.99, 144.0, 19.99, 33.18, 159.95, 329.99, 818.37, 121.99, 87.61, 23.84, 36.32, 169.99, 35.99, 16.0, 24.28, 27.95, 22.99, 32.99, 19.99, 101.99, 59.99, 83.36, 48.79, 141.99, 79.95, 79.97, 89.0, 129.84, 235.95, 78.5, 46.01, 68.99, 32.99, 38.0, 144.99, 29.99, 139.0, 339.0, 139.19, 17.5, 138.0, 379.99, 299.95, 69.2, 84.0, 25.99, 47.99, 67.99, 129.99, 29.99, 57.99, 104.99, 39.99, 299.95, 15.95, 10.99, 849.99, 275.0, 104.99, 128.89, 144.35, 174.99, 71.95, 159.05, 29.99, 159.95, 77.88, 17.99, 24.1, 162.99, 749.99, 25.99, 37.57, 20.1, 34.99, 163.7, 14.95, 46.78, 623.0, 86.97, 116.12, 369.95], "mean": 4.451376256793599, "std": 1.0119165823598792};
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const money = v => "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const signed = (v, d = 2) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+const fmtInt = v => Math.round(v).toLocaleString("en-US");
+const rootStyle = getComputedStyle(document.documentElement);
+const tokenColor = n => rootStyle.getPropertyValue(n).trim();
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function tween(ms, step, done) {
+  if (reduceMotion || ms <= 0) { step(1); if (done) done(); return () => {}; }
+  let raf = 0, t0 = null, stopped = false;
+  const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const frame = ts => {
+    if (stopped) return;
+    if (t0 === null) t0 = ts;
+    const t = Math.min(1, (ts - t0) / ms);
+    step(ease(t));
+    if (t < 1) raf = requestAnimationFrame(frame); else if (done) done();
+  };
+  raf = requestAnimationFrame(frame);
+  return () => { stopped = true; cancelAnimationFrame(raf); };
+}
+function rng32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); while (v === 0) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function safe(name, fn) { try { fn(); } catch (err) { console.error("[" + name + "]", err); } }
+
+/* ---------- code blocks: line numbers and light highlighting ---------- */
+safe("code", () => {
+  const KW = new Set(["class", "def", "return", "for", "in", "if", "elif", "else", "with", "import", "from", "as", "self", "super", "True", "False", "None", "and", "or", "not"]);
+  const MOD = new Set(["nn", "torch", "optim", "np"]);
+  const hl = line => {
+    const re = /(#.*$)|(f?"(?:[^"\\]|\\.)*"|f?'(?:[^'\\]|\\.)*')|(\b\d[\d_]*(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)/g;
+    let out = "", last = 0, m;
+    while ((m = re.exec(line))) {
+      out += esc(line.slice(last, m.index));
+      const t = m[0];
+      if (m[1]) out += '<span class="tc">' + esc(t) + "</span>";
+      else if (m[2]) out += '<span class="ts">' + esc(t) + "</span>";
+      else if (m[3]) out += '<span class="tn">' + esc(t) + "</span>";
+      else if (KW.has(t)) out += '<span class="tk">' + t + "</span>";
+      else if (MOD.has(t)) out += '<span class="tm">' + t + "</span>";
+      else out += esc(t);
+      last = re.lastIndex;
+    }
+    return out + esc(line.slice(last));
+  };
+  $$("pre.code").forEach(pre => {
+    const start = parseInt(pre.dataset.start || "1", 10);
+    const hot = new Set((pre.dataset.hl || "").split(",").filter(Boolean).map(Number));
+    const lines = pre.textContent.split("\n");
+    pre.innerHTML = lines.map((ln, i) => '<span class="ln' + (hot.has(start + i) ? " hl" : "") + '" data-n="' + (start + i) + '">' + hl(ln) + "</span>").join("");
+  });
+});
+
+/* ---------- hero ---------- */
+safe("hero", () => { $("#hero-text").textContent = DATA.samples[0].text.replace(/ +\n/g, "\n"); });
+
+/* ---------- Step 1: hashing, same recipe as sklearn ---------- */
+safe("hashing", () => {
+  const STOP = new Set(DATA.stop.split(" "));
+  const enc = new TextEncoder();
+  function murmur3_32(bytes, seed) {
+    let h = seed >>> 0;
+    const c1 = 0xcc9e2d51, c2 = 0x1b873593, len = bytes.length, nb = len >> 2;
+    for (let i = 0; i < nb; i++) {
+      let k = bytes[4 * i] | (bytes[4 * i + 1] << 8) | (bytes[4 * i + 2] << 16) | (bytes[4 * i + 3] << 24);
+      k = Math.imul(k, c1); k = (k << 15) | (k >>> 17); k = Math.imul(k, c2);
+      h ^= k; h = (h << 13) | (h >>> 19); h = (Math.imul(h, 5) + 0xe6546b64) | 0;
+    }
+    let k = 0; const t = nb * 4;
+    switch (len & 3) {
+      case 3: k ^= bytes[t + 2] << 16; // falls through
+      case 2: k ^= bytes[t + 1] << 8; // falls through
+      case 1: k ^= bytes[t]; k = Math.imul(k, c1); k = (k << 15) | (k >>> 17); k = Math.imul(k, c2); h ^= k;
+    }
+    h ^= len; h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+    return h | 0;
+  }
+  const memo = new Map();
+  function bucketOf(word) {
+    if (memo.has(word)) return memo.get(word);
+    const h = murmur3_32(enc.encode(word), 0);
+    const b = h === -2147483648 ? (2147483647 - 4999) % 5000 : Math.abs(h) % 5000;
+    memo.set(word, b);
+    return b;
+  }
+  const tokenize = text => text.toLowerCase().match(/[\p{L}\p{N}_]{2,}/gu) || [];
+
+  const area = $("#hash-text"), box = $("#hash-tokens"), canvas = $("#hash-grid"), tip = $("#hash-tip");
+  const readout = $("#hash-readout"), collide = $("#hash-collide"), samplesEl = $("#hash-samples");
+  const COLS = { cell: tokenColor("--cell"), lit: tokenColor("--yellow"), col: tokenColor("--red"), bg: tokenColor("--well"), fg: tokenColor("--fg") };
+  let state = { buckets: new Map(), k: 0 };
+  let hover = -1;
+
+  DATA.samples.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn"; b.dataset.i = i;
+    b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+    b.textContent = s.name + " · " + money(s.price);
+    samplesEl.appendChild(b);
+  });
+  samplesEl.addEventListener("click", e => {
+    const b = e.target.closest("button[data-i]"); if (!b) return;
+    $$("button", samplesEl).forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    area.value = DATA.samples[+b.dataset.i].text.replace(/ +\n/g, "\n");
+    run();
+  });
+
+  function draw() {
+    const w = canvas.clientWidth || 600, h = w / 2, dpr = window.devicePixelRatio || 1;
+    const W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = COLS.bg; ctx.fillRect(0, 0, w, h);
+    const cw = w / 100, ch = h / 50, g = cw > 5 ? 1 : 0.5;
+    ctx.fillStyle = COLS.cell;
+    for (let b = 0; b < 5000; b++) ctx.fillRect((b % 100) * cw + g / 2, Math.floor(b / 100) * ch + g / 2, cw - g, ch - g);
+    state.buckets.forEach((words, b) => {
+      ctx.fillStyle = words.length > 1 ? COLS.col : COLS.lit;
+      ctx.fillRect((b % 100) * cw, Math.floor(b / 100) * ch, cw, ch);
+    });
+    if (hover >= 0) {
+      ctx.strokeStyle = COLS.fg; ctx.lineWidth = 1.5;
+      ctx.strokeRect((hover % 100) * cw - 2, Math.floor(hover / 100) * ch - 2, cw + 4, ch + 4);
+    }
+  }
+  function describe(b) {
+    if (b < 0) { tip.innerHTML = "Hover or tap a cell or a word to connect them."; return; }
+    const words = state.buckets.get(b);
+    tip.innerHTML = words
+      ? "Bucket <b>" + b + "</b> holds " + words.map(w => "<b>" + esc(w) + "</b>").join(" + ") + " → value " + (1 / Math.sqrt(state.k)).toFixed(4)
+      : "Bucket " + b + " stays 0 for this product.";
+  }
+  function setHover(b) {
+    hover = b;
+    $$(".tok.hot", box).forEach(t => t.classList.remove("hot"));
+    if (b >= 0) $$('.tok[data-b="' + b + '"]', box).forEach(t => t.classList.add("hot"));
+    describe(b); draw();
+  }
+  function run() {
+    const all = tokenize(area.value);
+    const kept = all.filter(t => !STOP.has(t));
+    const unique = Array.from(new Set(kept));
+    const buckets = new Map();
+    unique.forEach(w => { const b = bucketOf(w); if (!buckets.has(b)) buckets.set(b, []); buckets.get(b).push(w); });
+    state = { buckets, k: buckets.size };
+    const seen = new Set();
+    const html = all.slice(0, 160).map(t => {
+      if (STOP.has(t)) return '<span class="tok stop"><b>' + esc(t) + "</b><i>stop word</i></span>";
+      const b = bucketOf(t), dup = seen.has(t); seen.add(t);
+      const shared = buckets.get(b).length > 1;
+      return '<span class="tok' + (dup ? " dup" : "") + (shared ? " col" : "") + '" data-b="' + b + '"><b>' + esc(t) + "</b><i>" + (dup ? "repeat" : "→ " + b) + "</i></span>";
+    }).join("");
+    box.innerHTML = html || '<span class="small muted">No words yet.</span>';
+    const k = state.k, val = k ? 1 / Math.sqrt(k) : 0;
+    readout.innerHTML =
+      "<div><dt>Words found</dt><dd>" + all.length + "</dd></div>" +
+      "<div><dt>Stop words dropped</dt><dd>" + (all.length - kept.length) + "</dd></div>" +
+      "<div><dt>Different words left</dt><dd>" + unique.length + "</dd></div>" +
+      "<div><dt>Lit buckets of 5,000</dt><dd>" + k + "</dd></div>" +
+      "<div><dt>Value in each</dt><dd>" + (k ? "1/√" + k + " = " + val.toFixed(4) : "0") + "</dd></div>";
+    const shared = Array.from(buckets.entries()).filter(([, ws]) => ws.length > 1);
+    collide.innerHTML = shared.length
+      ? "Sharing a bucket in this product: " + shared.map(([b, ws]) => ws.map(w => '<strong style="color:var(--red)">' + esc(w) + "</strong>").join(" and ") + " both land in bucket " + b).join("; ") + "."
+      : '<span class="muted">No two words in this product share a bucket.</span>';
+    setHover(-1);
+  }
+  let pending = 0;
+  area.addEventListener("input", () => {
+    $$("button", samplesEl).forEach(x => x.setAttribute("aria-pressed", "false"));
+    cancelAnimationFrame(pending); pending = requestAnimationFrame(run);
+  });
+  box.addEventListener("pointerover", e => { const t = e.target.closest(".tok[data-b]"); if (t) setHover(+t.dataset.b); });
+  box.addEventListener("pointerleave", () => setHover(-1));
+  const cellAt = e => {
+    const r = canvas.getBoundingClientRect();
+    const col = clamp(Math.floor((e.clientX - r.left) / r.width * 100), 0, 99);
+    const row = clamp(Math.floor((e.clientY - r.top) / r.height * 50), 0, 49);
+    return row * 100 + col;
+  };
+  canvas.addEventListener("pointermove", e => setHover(cellAt(e)));
+  canvas.addEventListener("pointerdown", e => setHover(cellAt(e)));
+  canvas.addEventListener("pointerleave", () => setHover(-1));
+  if ("ResizeObserver" in window) new ResizeObserver(() => draw()).observe(canvas);
+  area.value = DATA.samples[0].text.replace(/ +\n/g, "\n");
+  run();
+});
+
+/* ---------- Step 2: prices ---------- */
+safe("prices", () => {
+  const P = DATA.prices, MEAN = DATA.mean, STD = DATA.std;
+  const svg = $("#price-svg"), cap = $("#price-cap"), eq = $("#price-eq"), out = $("#price-out"), slider = $("#price-slider");
+  const X0 = 40, X1 = 640, AXY = 168;
+  const roundPrice = v => (v < 10 ? v.toFixed(1) : fmtInt(v));
+  const MODES = {
+    dollars: {
+      f: p => p, lo: 0, hi: 900,
+      ticks: [0, 200, 400, 600, 800].map(v => ({ v, a: "$" + fmtInt(v) })),
+      cap: "In dollars, most products crowd into the left of the axis while a few expensive ones stretch it out."
+    },
+    log: {
+      f: p => Math.log(p + 1), lo: 1.5, hi: 7.5,
+      ticks: [2, 3, 4, 5, 6, 7].map(v => ({ v, a: String(v), b: "$" + roundPrice(Math.exp(v) - 1) })),
+      cap: "After log(price + 1) the same products spread out evenly. Each step of 1 on this axis means about 2.7 times the price."
+    },
+    z: {
+      f: p => (Math.log(p + 1) - MEAN) / STD, lo: -3.5, hi: 3.5,
+      ticks: [-3, -2, -1, 0, 1, 2, 3].map(v => ({ v, a: v === 0 ? "0" : signed(v, 0), b: "$" + roundPrice(Math.exp(v * STD + MEAN) - 1) })),
+      cap: "Subtract the average (4.451) and divide by the spread (1.012): a typical product now sits at 0. This is the number the network is trained to predict."
+    }
+  };
+  let mode = "dollars";
+  const xOf = (m, p) => clamp(X0 + (MODES[m].f(p) - MODES[m].lo) / (MODES[m].hi - MODES[m].lo) * (X1 - X0), X0 - 6, X1 + 6);
+  svgEl("line", { x1: X0, y1: AXY, x2: X1, y2: AXY, class: "axis" }, svg);
+  const tickG = svgEl("g", null, svg);
+  const marker = svgEl("line", { y1: 30, y2: AXY, stroke: "var(--yellow)", "stroke-width": 1.6, "stroke-dasharray": "5 4" }, svg);
+  const dotG = svgEl("g", null, svg);
+  const special = [
+    { price: 8.08, label: "calendar $8.08", y: 58, color: "var(--brown)" },
+    { price: 240.0, label: "Bose $240", y: 108, color: "var(--yellow)" },
+    { price: 849.99, label: "Fender $849.99", y: 84, color: "var(--brown)" }
+  ];
+  const dots = P.map((p, i) => {
+    const sp = special.find(s => Math.abs(s.price - p) < 0.001);
+    const c = svgEl("circle", { r: sp ? 6.5 : 4.2, cy: sp ? sp.y : 44 + ((i * 53) % 109), fill: sp ? sp.color : "var(--blue)", "fill-opacity": sp ? 1 : 0.65 }, dotG);
+    let label = null;
+    if (sp) label = svgEl("text", { y: sp.y - 12, "font-size": 12, class: sp.price === 240 ? "t-yellow" : "t-brown" }, dotG);
+    if (label) label.textContent = sp.label;
+    return { p, c, label, x: xOf(mode, p) };
+  });
+  dots.filter(d => d.label).forEach(d => dotG.appendChild(d.c));
+  dots.filter(d => d.label).forEach(d => dotG.appendChild(d.label));
+  function place(d, x) {
+    d.c.setAttribute("cx", x.toFixed(1));
+    if (d.label) {
+      const anchor = x > 560 ? "end" : x < 120 ? "start" : "middle";
+      d.label.setAttribute("x", (anchor === "end" ? x + 6 : anchor === "start" ? x - 6 : x).toFixed(1));
+      d.label.setAttribute("text-anchor", anchor);
+    }
+  }
+  function drawTicks() {
+    tickG.textContent = "";
+    const M = MODES[mode];
+    M.ticks.forEach(t => {
+      const x = X0 + (t.v - M.lo) / (M.hi - M.lo) * (X1 - X0);
+      svgEl("line", { x1: x, y1: AXY, x2: x, y2: AXY + 6, class: "axis" }, tickG);
+      const a = svgEl("text", { x, y: AXY + 22, "text-anchor": "middle", "font-size": 12.5, class: "t-mono" }, tickG); a.textContent = t.a;
+      if (t.b) { const b = svgEl("text", { x, y: AXY + 39, "text-anchor": "middle", "font-size": 11, class: "t-muted" }, tickG); b.textContent = "≈ " + t.b; }
+    });
+  }
+  let price = 240;
+  function updateMarker() {
+    const x = xOf(mode, price);
+    marker.setAttribute("x1", x.toFixed(1)); marker.setAttribute("x2", x.toFixed(1));
+    const lg = Math.log(price + 1), z = (lg - MEAN) / STD;
+    out.textContent = money(price);
+    eq.textContent = money(price) + "  →  log(" + price.toFixed(2) + " + 1) = " + lg.toFixed(3) + "  →  z = (" + lg.toFixed(3) + " − " + MEAN.toFixed(3) + ") ÷ " + STD.toFixed(3) + " = " + signed(z, 2);
+  }
+  let cancel = () => {};
+  function setMode(m) {
+    mode = m;
+    $$("#price-modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m ? "true" : "false"));
+    cap.textContent = MODES[m].cap;
+    drawTicks();
+    const from = dots.map(d => d.x), to = dots.map(d => xOf(m, d.p));
+    cancel();
+    cancel = tween(800, t => dots.forEach((d, i) => { d.x = lerp(from[i], to[i], t); place(d, d.x); }));
+    updateMarker();
+  }
+  $("#price-modes").addEventListener("click", e => { const b = e.target.closest("button[data-mode]"); if (b) setMode(b.dataset.mode); });
+  slider.addEventListener("input", () => { price = Math.exp(slider.value / 1000 * Math.log(2001)) - 1; updateMarker(); });
+  dots.forEach(d => place(d, d.x));
+  setMode("dollars");
+});
+
+/* ---------- Step 3: one neuron ---------- */
+safe("neuron", () => {
+  const svg = $("#neuron-svg"), eq = $("#neuron-eq"), toggles = $("#neuron-toggles");
+  const BIAS = -0.1;
+  const inputs = [
+    { w: "wireless", wt: 0.9, on: true }, { w: "cancelling", wt: 0.8, on: true }, { w: "headphones", wt: 0.6, on: true },
+    { w: "premium", wt: 0.5, on: true }, { w: "calendar", wt: -0.9, on: false }, { w: "case", wt: -0.6, on: false }
+  ];
+  const NX = 480, NY = 150, IX = 170;
+  const lines = [], nodes = [], vals = [];
+  inputs.forEach((inp, i) => {
+    const y = 35 + i * 46;
+    const ln = svgEl("line", { x1: IX + 15, y1: y, x2: NX - 38, y2: NY, "stroke-linecap": "round" }, svg);
+    const wl = svgEl("text", { x: lerp(IX + 15, NX - 38, 0.22), y: lerp(y, NY, 0.22) - 6, "font-size": 12, "text-anchor": "middle", class: "t-mono " + (inp.wt > 0 ? "t-blue" : "t-red") }, svg);
+    wl.textContent = (inp.wt > 0 ? "+" : "−") + Math.abs(inp.wt).toFixed(1);
+    lines.push(ln);
+    const lab = svgEl("text", { x: IX - 24, y: y + 4, "text-anchor": "end", "font-size": 14 }, svg); lab.textContent = inp.w;
+    nodes.push(svgEl("circle", { cx: IX, cy: y, r: 15, stroke: "var(--rule)", "stroke-width": 1.2 }, svg));
+    const v = svgEl("text", { x: IX, y: y + 4, "text-anchor": "middle", "font-size": 10.5, class: "t-mono" }, svg);
+    vals.push(v);
+  });
+  const neuron = svgEl("circle", { cx: NX, cy: NY, r: 36, stroke: "var(--yellow)", "stroke-width": 1.6 }, svg);
+  const nval = svgEl("text", { x: NX, y: NY + 5, "text-anchor": "middle", "font-size": 15, class: "t-mono" }, svg);
+  const nlab = svgEl("text", { x: NX, y: NY + 58, "text-anchor": "middle", "font-size": 12, class: "t-muted" }, svg); nlab.textContent = "after ReLU";
+  const btitle = svgEl("text", { x: NX, y: NY - 50, "text-anchor": "middle", "font-size": 12, class: "t-muted" }, svg); btitle.textContent = "one neuron, bias −0.1";
+  inputs.forEach((inp, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn"; b.dataset.i = i; b.textContent = inp.w;
+    toggles.appendChild(b);
+  });
+  toggles.addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (!b) return; inputs[+b.dataset.i].on = !inputs[+b.dataset.i].on; update(); });
+  function update() {
+    const k = inputs.filter(x => x.on).length;
+    const x = k ? 1 / Math.sqrt(k) : 0;
+    let sum = BIAS; const parts = [];
+    inputs.forEach((inp, i) => {
+      const xi = inp.on ? x : 0;
+      sum += xi * inp.wt;
+      if (inp.on) parts.push(x.toFixed(2) + "×(" + (inp.wt > 0 ? "+" : "−") + Math.abs(inp.wt).toFixed(1) + ")");
+      const col = inp.wt > 0 ? "var(--blue)" : "var(--red)";
+      lines[i].setAttribute("stroke", col);
+      lines[i].setAttribute("stroke-width", (1 + Math.abs(inp.wt) * 5).toFixed(1));
+      lines[i].setAttribute("stroke-opacity", inp.on ? 0.95 : 0.14);
+      nodes[i].setAttribute("fill", inp.on ? "var(--yellow)" : "var(--cell)");
+      nodes[i].setAttribute("fill-opacity", inp.on ? 0.6 + 0.4 * x : 1);
+      vals[i].textContent = inp.on ? x.toFixed(2) : "0";
+      vals[i].style.fill = inp.on ? "var(--bg)" : "var(--faint)";
+      toggles.children[i].setAttribute("aria-pressed", inp.on ? "true" : "false");
+    });
+    const outv = Math.max(0, sum);
+    neuron.setAttribute("fill", "var(--fg)");
+    neuron.setAttribute("fill-opacity", (0.06 + 0.8 * Math.min(1, outv / 1.4)).toFixed(2));
+    nval.textContent = outv.toFixed(2);
+    nval.style.fill = outv > 0.75 ? "var(--bg)" : "";
+    eq.textContent = (parts.length ? parts.join(" + ") + " + bias(−0.1)" : "nothing lit + bias(−0.1)") + " = " + signed(sum, 2) + "  →  ReLU  →  " + outv.toFixed(2);
+  }
+  update();
+});
+
+/* ---------- Step 4: Linear, LayerNorm, ReLU, Dropout ---------- */
+safe("layer", () => {
+  const svg = $("#layer-svg"), cap = $("#layer-cap"), reroll = $("#layer-reroll");
+  const N = 32, ZERO = 160, S = 15, X0 = 62, STEP = 18, BW = 13;
+  const r = rng32(7);
+  const raw = Array.from({ length: N }, () => clamp(1.8 + 2.2 * gauss(r), -4.5, 6.6));
+  const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+  const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / a.length); };
+  const m0 = mean(raw), s0 = sd(raw);
+  const ln = raw.map(v => (v - m0) / Math.sqrt(s0 * s0 + 1e-5));
+  const relu = ln.map(v => Math.max(0, v));
+  let seed = 11, mask = [];
+  const makeMask = () => { const rr = rng32(seed); mask = Array.from({ length: N }, () => rr() >= 0.2); };
+  makeMask();
+  const drop = () => relu.map((v, i) => (mask[i] ? v * 1.25 : 0));
+  [-4, -2, 0, 2, 4, 6].forEach(v => {
+    const y = ZERO - v * S;
+    svgEl("line", { x1: 52, y1: y, x2: 640, y2: y, class: v === 0 ? "axis" : "gridline" }, svg);
+    const t = svgEl("text", { x: 44, y: y + 4, "text-anchor": "end", "font-size": 11.5, class: "t-muted t-mono" }, svg); t.textContent = v > 0 ? "+" + v : v < 0 ? "−" + Math.abs(v) : "0";
+  });
+  const bars = [], xs = [];
+  for (let i = 0; i < N; i++) {
+    const x = X0 + i * STEP;
+    bars.push(svgEl("rect", { x, width: BW, rx: 2 }, svg));
+    const xm = svgEl("text", { x: x + BW / 2, y: ZERO + 4, "text-anchor": "middle", "font-size": 11, class: "t-red" }, svg);
+    xm.textContent = "×"; xm.style.display = "none"; xs.push(xm);
+  }
+  const stat = svgEl("text", { x: 640, y: 254, "text-anchor": "end", "font-size": 12, class: "t-muted t-mono" }, svg);
+  const CAPS = [
+    "Out of the Linear layer: these sums can sit at any level with any spread, and they drift as the weights change during training.",
+    "LayerNorm: subtract this product's average, divide by its spread. Now the numbers average 0 with a spread of 1, whatever happened upstream. (Then a learned stretch and shift are applied, starting at 1 and 0.)",
+    "ReLU: every negative becomes 0 and every positive passes through. This kink is what lets the network learn relationships that aren't straight lines.",
+    "Dropout, only during training: about 20% of the neurons are silenced at random for this step, and the survivors are multiplied by 1.25 so the total stays about the same. Next step, a different 20%."
+  ];
+  let stage = 0, cur = raw.slice(), cancel = () => {};
+  const target = s => (s === 0 ? raw : s === 1 ? ln : s === 2 ? relu : drop());
+  function render(vals, s) {
+    vals.forEach((v, i) => {
+      const h = Math.max(1, Math.abs(v) * S);
+      const dropped = s === 3 && !mask[i];
+      bars[i].setAttribute("y", (v >= 0 ? ZERO - h : ZERO).toFixed(1));
+      bars[i].setAttribute("height", h.toFixed(1));
+      bars[i].setAttribute("fill", v >= 0 ? "var(--blue)" : "var(--red)");
+      bars[i].setAttribute("fill-opacity", dropped ? 0 : 0.85);
+      xs[i].style.display = dropped ? "" : "none";
+    });
+  }
+  function go(s) {
+    stage = s;
+    $$("#layer-stages button[data-stage]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.stage === s ? "true" : "false"));
+    reroll.disabled = s !== 3;
+    cap.textContent = CAPS[s];
+    const from = cur.slice(), to = target(s);
+    cancel();
+    cancel = tween(650, t => { cur = from.map((v, i) => lerp(v, to[i], t)); render(cur, s); });
+    const m = mean(to), d = sd(to);
+    stat.textContent = "average " + signed(m, 2) + "   spread " + d.toFixed(2);
+  }
+  $("#layer-stages").addEventListener("click", e => { const b = e.target.closest("button[data-stage]"); if (b) go(+b.dataset.stage); });
+  reroll.addEventListener("click", () => { seed += 1; makeMask(); go(3); });
+  render(cur, 0); go(0);
+});
+
+/* ---------- Step 5: the highway ---------- */
+safe("highway", () => {
+  const svg = $("#hw-svg");
+  const names = ["Input", "Block 1", "Block 2", "Block 3", "Block 4", "Block 5", "Block 6", "Block 7", "Block 8", "Output"];
+  const BASE = 180, H = 120, X0 = 38, STEP = 62, BW = 34;
+  const defs = svgEl("defs", null, svg);
+  const mk = svgEl("marker", { id: "ah3", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, defs);
+  svgEl("path", { d: "M0 0 L10 5 L0 10 Z", class: "arrowhead" }, mk);
+  svgEl("line", { x1: 30, y1: BASE, x2: 640, y2: BASE, class: "axis" }, svg);
+  svgEl("path", { d: "M620 22 H52", class: "flow", "marker-end": "url(#ah3)" }, svg);
+  const head = svgEl("text", { x: 336, y: 16, "text-anchor": "middle", "font-size": 12, class: "t-muted" }, svg);
+  head.textContent = "learning signal flows back from the output";
+  const bars = [], labs = [];
+  names.forEach((n, i) => {
+    const x = X0 + i * STEP;
+    bars.push(svgEl("rect", { x, width: BW, rx: 3, y: BASE - H, height: H }, svg));
+    labs.push(svgEl("text", { x: x + BW / 2, "text-anchor": "middle", "font-size": 12, class: "t-mono" }, svg));
+    const parts = n.split(" ");
+    const t1 = svgEl("text", { x: x + BW / 2, y: BASE + 18, "text-anchor": "middle", "font-size": 11.5, class: "t-muted" }, svg); t1.textContent = parts[0];
+    if (parts[1]) { const t2 = svgEl("text", { x: x + BW / 2, y: BASE + 33, "text-anchor": "middle", "font-size": 11.5, class: "t-muted" }, svg); t2.textContent = parts[1]; }
+  });
+  const vals = skip => names.map((n, i) => (skip || i >= 8 ? 1 : Math.pow(0.55, 8 - i)));
+  let cur = vals(true), cancel = () => {};
+  function render(v, skip) {
+    v.forEach((val, i) => {
+      const h = Math.max(1.5, val * H);
+      bars[i].setAttribute("y", (BASE - h).toFixed(1));
+      bars[i].setAttribute("height", h.toFixed(1));
+      bars[i].setAttribute("fill", skip ? "var(--teal)" : val > 0.5 ? "var(--blue)" : "var(--red)");
+      labs[i].setAttribute("y", (BASE - h - 7).toFixed(1));
+      labs[i].textContent = val >= 0.995 ? "100%" : val >= 0.1 ? Math.round(val * 100) + "%" : (val * 100).toFixed(1) + "%";
+    });
+  }
+  function set(skip) {
+    $$("#hw-toggle button").forEach(b => b.setAttribute("aria-pressed", (b.dataset.skip === "1") === skip ? "true" : "false"));
+    const from = cur.slice(), to = vals(skip);
+    cancel();
+    cancel = tween(700, t => { cur = from.map((v, i) => lerp(v, to[i], t)); render(cur, skip); });
+  }
+  $("#hw-toggle").addEventListener("click", e => { const b = e.target.closest("button[data-skip]"); if (b) set(b.dataset.skip === "1"); });
+  render(cur, true);
+});
+
+/* ---------- Step 7: parameter counter ---------- */
+safe("params", () => {
+  const SIZES = [512, 1024, 2048, 4096, 8192];
+  const hS = $("#pc-h"), lS = $("#pc-l"), hO = $("#pc-h-out"), lO = $("#pc-l-out");
+  const total = $("#pc-total"), bar = $("#pc-bar"), legend = $("#pc-legend"), readout = $("#pc-readout");
+  const gb = n => (n / 1e9).toFixed(n < 1e9 ? 2 : 2) + " GB";
+  function update() {
+    const h = SIZES[+hS.value], L = +lS.value, IN = 5000;
+    const input = IN * h + h + 2 * h;
+    const block = 2 * (h * h + h) + 2 * (2 * h);
+    const blocks = (L - 2) * block;
+    const output = h + 1;
+    const all = input + blocks + output;
+    hO.textContent = fmtInt(h); lO.textContent = String(L);
+    total.textContent = fmtInt(all);
+    bar.innerHTML = '<i style="flex:' + input + ';background:var(--blue)"></i>' +
+      Array.from({ length: L - 2 }, (_, i) => '<i style="flex:' + block + ';background:' + (i % 2 ? "var(--yellow)" : "var(--yellow-soft)") + '"></i>').join("") +
+      '<i style="flex:0 0 3px;background:var(--brown)"></i>';
+    legend.innerHTML =
+      '<span><i style="background:var(--blue)"></i>input layer <b>' + fmtInt(input) + "</b> (" + (input / all * 100).toFixed(1) + "%)</span>" +
+      '<span><i style="background:var(--yellow)"></i>' + (L - 2) + " residual blocks <b>" + fmtInt(blocks) + "</b> (" + (blocks / all * 100).toFixed(1) + "%)</span>" +
+      '<span><i style="background:var(--brown)"></i>output layer <b>' + fmtInt(output) + "</b></span>";
+    readout.innerHTML =
+      "<div><dt>One block</dt><dd>" + fmtInt(block) + "</dd></div>" +
+      "<div><dt>Weights file</dt><dd>" + gb(all * 4) + "</dd></div>" +
+      "<div><dt>Memory to train</dt><dd>≈ " + gb(all * 16) + "</dd></div>";
+  }
+  hS.addEventListener("input", update); lS.addEventListener("input", update);
+  update();
+});
+
+/* ---------- Step 8a: median versus mean ---------- */
+safe("median", () => {
+  const svg = $("#mm-svg"), eq = $("#mm-eq");
+  const X0 = 30, X1 = 610, MAXP = 600, LY = 100;
+  const px = p => X0 + p / MAXP * (X1 - X0);
+  const ofX = x => clamp((x - X0) / (X1 - X0) * MAXP, 0, MAXP);
+  svgEl("line", { x1: X0, y1: LY, x2: X1, y2: LY, class: "axis" }, svg);
+  [0, 100, 200, 300, 400, 500, 600].forEach(v => {
+    svgEl("line", { x1: px(v), y1: LY - 4, x2: px(v), y2: LY + 4, class: "axis" }, svg);
+    const t = svgEl("text", { x: px(v), y: LY + 28, "text-anchor": "middle", "font-size": 11, class: "t-faint t-mono" }, svg); t.textContent = "$" + v;
+  });
+  const meanG = svgEl("g", null, svg), medG = svgEl("g", null, svg);
+  const meanTri = svgEl("path", { fill: "var(--red)" }, meanG);
+  const meanTxt = svgEl("text", { y: 50, "font-size": 12.5, class: "t-red", "text-anchor": "middle" }, meanG);
+  const medTri = svgEl("path", { fill: "var(--green)" }, medG);
+  const medTxt = svgEl("text", { y: 172, "font-size": 12.5, class: "t-green", "text-anchor": "middle" }, medG);
+  const prices = [19.99, 34.99, 49.99, 64.95, 79.99, 99.99, 240];
+  const dots = prices.map((p, i) => {
+    const c = svgEl("circle", { cy: LY, r: 11, fill: "var(--blue)", "fill-opacity": 0.85, stroke: "var(--bg)", "stroke-width": 2, tabindex: 0, role: "slider", "aria-label": "price " + (i + 1), "aria-valuemin": 0, "aria-valuemax": MAXP }, svg);
+    c.style.cursor = "grab"; c.style.touchAction = "none";
+    return { p, c };
+  });
+  function update() {
+    const ps = dots.map(d => d.p);
+    const sorted = ps.slice().sort((a, b) => a - b);
+    const med = sorted[3], mu = ps.reduce((s, v) => s + v, 0) / ps.length;
+    dots.forEach(d => { d.c.setAttribute("cx", px(d.p).toFixed(1)); d.c.setAttribute("aria-valuenow", d.p.toFixed(0)); d.c.setAttribute("aria-valuetext", money(d.p)); });
+    const xm = px(mu), xd = px(med);
+    meanTri.setAttribute("d", "M" + (xm - 7) + " 60 L" + (xm + 7) + " 60 L" + xm + " 74 Z");
+    meanTxt.setAttribute("x", clamp(xm, 130, 520).toFixed(1)); meanTxt.textContent = "mean " + money(mu) + ", what squared error picks";
+    medTri.setAttribute("d", "M" + (xd - 7) + " 154 L" + (xd + 7) + " 154 L" + xd + " 140 Z");
+    medTxt.setAttribute("x", clamp(xd, 130, 520).toFixed(1)); medTxt.textContent = "median " + money(med) + ", what absolute error picks";
+    const abs = g => ps.reduce((s, v) => s + Math.abs(v - g), 0);
+    eq.textContent = "Total of |guess − price| over all 7:  guess the median → " + money(abs(med)) + "   guess the mean → " + money(abs(mu));
+  }
+  let drag = null;
+  const toSvgX = e => { const m = svg.getScreenCTM(); if (!m) return 0; const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(m.inverse()).x; };
+  dots.forEach(d => {
+    d.c.addEventListener("pointerdown", e => { drag = d; d.c.setPointerCapture(e.pointerId); d.c.style.cursor = "grabbing"; e.preventDefault(); });
+    d.c.addEventListener("pointermove", e => { if (drag !== d) return; d.p = ofX(toSvgX(e)); update(); });
+    const end = () => { drag = null; d.c.style.cursor = "grab"; };
+    d.c.addEventListener("pointerup", end); d.c.addEventListener("pointercancel", end);
+    d.c.addEventListener("keydown", e => {
+      const step = e.shiftKey ? 50 : 5;
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") { d.p = clamp(d.p + step, 0, MAXP); update(); e.preventDefault(); }
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") { d.p = clamp(d.p - step, 0, MAXP); update(); e.preventDefault(); }
+    });
+  });
+  update();
+});
+
+/* ---------- Step 8c: gradient descent toy ---------- */
+safe("descent", () => {
+  const svg = $("#gd-svg"), eq = $("#gd-eq"), lrS = $("#gd-lr"), lrO = $("#gd-lr-out");
+  const f = w => 0.5 * (w - 1) * (w - 1), df = w => w - 1;
+  const WX0 = 40, WX1 = 600, Y0 = 225, YH = 190, WMIN = -3, WMAX = 5;
+  const X = w => WX0 + (w - WMIN) / (WMAX - WMIN) * (WX1 - WX0);
+  const Y = w => Y0 - Math.min(f(w), 8.6) / 8 * YH;
+  let d = "";
+  for (let i = 0; i <= 120; i++) { const w = WMIN + (WMAX - WMIN) * i / 120; d += (i ? " L" : "M") + X(w).toFixed(1) + " " + Y(w).toFixed(1); }
+  svgEl("line", { x1: WX0, y1: Y0, x2: WX1, y2: Y0, class: "axis" }, svg);
+  svgEl("path", { d, fill: "none", stroke: "var(--muted)", "stroke-width": 2 }, svg);
+  svgEl("line", { x1: X(1), y1: Y0, x2: X(1), y2: Y0 + 6, stroke: "var(--green)", "stroke-width": 2 }, svg);
+  const best = svgEl("text", { x: X(1), y: Y0 + 20, "text-anchor": "middle", "font-size": 12, class: "t-green" }, svg); best.textContent = "best value";
+  const yl = svgEl("text", { x: WX0, y: 22, "font-size": 12, class: "t-muted" }, svg); yl.textContent = "loss (how wrong)";
+  const xl = svgEl("text", { x: WX1, y: Y0 + 20, "text-anchor": "end", "font-size": 12, class: "t-muted" }, svg); xl.textContent = "the one number being learned →";
+  const trailG = svgEl("g", null, svg);
+  const ball = svgEl("circle", { r: 9, fill: "var(--yellow)", stroke: "var(--bg)", "stroke-width": 2 }, svg);
+  let w = -2.5, history = [w], busy = false, msg = "";
+  const lr = () => +lrS.value;
+  function verdict(v) {
+    if (v < 0.2) return "Tiny steps: safe, but slow.";
+    if (v < 0.95) return "Steady steps that shrink as the slope flattens.";
+    if (v <= 1.05) return "One perfect jump. That only happens on a toy curve like this.";
+    if (v < 1.95) return "Too big: it overshoots and zig-zags across the valley.";
+    return "Far too big: every step overshoots further, and it flies off.";
+  }
+  function render() {
+    trailG.textContent = "";
+    for (let i = 1; i < history.length; i++) {
+      const a = clamp(history[i - 1], WMIN, WMAX), b = clamp(history[i], WMIN, WMAX);
+      svgEl("line", { x1: X(a), y1: Y(a), x2: X(b), y2: Y(b), stroke: "var(--yellow)", "stroke-opacity": 0.35, "stroke-width": 1.4, "stroke-dasharray": "3 3" }, trailG);
+      svgEl("circle", { cx: X(a), cy: Y(a), r: 3.5, fill: "var(--yellow)", "fill-opacity": 0.35 }, trailG);
+    }
+    const wc = clamp(w, WMIN, WMAX);
+    ball.setAttribute("cx", X(wc).toFixed(1)); ball.setAttribute("cy", Y(wc).toFixed(1));
+    lrO.textContent = lr().toFixed(2);
+    const slope = df(w), stepv = lr() * slope;
+    eq.textContent = (msg ? msg + "  " : "") + "slope here " + signed(slope, 2) + ", step = learning rate × slope = " + signed(stepv, 2) + "  →  " + verdict(lr());
+  }
+  function stepOnce() {
+    if (Math.abs(w) > 1e6) { msg = "It has flown off. Start over."; return; }
+    w = w - lr() * df(w); history.push(w); msg = Math.abs(w - 1) < 0.01 ? "Arrived." : "";
+    if (w < WMIN || w > WMAX) msg = "Off the chart: the steps keep growing.";
+  }
+  $("#gd-step").addEventListener("click", () => { stepOnce(); render(); });
+  $("#gd-run").addEventListener("click", () => {
+    if (busy) return; busy = true; let n = 0;
+    const tick = () => { stepOnce(); render(); n += 1; if (n < 10) setTimeout(tick, reduceMotion ? 0 : 160); else busy = false; };
+    tick();
+  });
+  $("#gd-reset").addEventListener("click", () => { w = -2.5; history = [w]; msg = ""; render(); });
+  lrS.addEventListener("input", () => { w = -2.5; history = [w]; msg = ""; render(); });
+  render();
+});
+
+/* ---------- results ---------- */
+safe("results", () => {
+  const rows = [
+    ["GPT 5.1", 44.74, "c-frontier"], ["Deep Neural Network (this file)", 46.49, "c-scratch", true], ["Claude 4.5 Sonnet", 47.10, "c-frontier"],
+    ["Gemini 3 Pro", 50.54, "c-frontier"], ["Grok 4.1 Fast", 57.62, "c-frontier"], ["GPT 4.1 Nano", 62.51, "c-frontier"],
+    ["Neural Network (Day 4)", 63.97, "c-scratch-dim"], ["XGBoost", 68.23, "c-ml"], ["Random Forest", 72.28, "c-ml"],
+    ["GPT 4.1 Nano, fine-tuned", 75.91, "c-ft"], ["NLP + Linear Regression", 76.81, "c-ml"], ["Human (Ed)", 87.62, "c-human"],
+    ["Linear Regression", 101.56, "c-ml"], ["Constant guess", 106.18, "c-ml"]
+  ];
+  const MAX = 110;
+  $("#results-bars").innerHTML = rows.map(([n, v, c, me]) =>
+    '<div class="bar' + (me ? " me" : "") + '"><span class="name">' + esc(n) + '</span><span class="track"><span class="fill ' + c + '" style="width:' + (v / MAX * 100).toFixed(2) + '%"></span><span class="val">' + money(v) + "</span></span></div>"
+  ).join("");
+});
+})();
+</script>
+</body>
+</html>

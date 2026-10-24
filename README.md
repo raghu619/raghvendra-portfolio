@@ -8,10 +8,11 @@ Plain HTML and CSS with one small script, no build step. Hosted on Vercel's free
 
 - `index.html`: home page
 - `projects/<name>/index.html`: one case study per project (served at `/projects/<name>/`)
+- `notes/<name>/index.html`: standalone interactive explainers (served at `/notes/<name>/`), each with its own inline styles and script
 - `styles.css`: all styles; `shelve.js`: the interactive listings on the catalogue case study
 - `assets/<project>/`: charts, copied from each project's repo
 - `og-home.png`, `assets/<project>/og-<project>.png`: 1200x630 link-preview cards, used when a page is shared on LinkedIn
-- `fonts/`: self-hosted Archivo and Source Serif 4 (SIL Open Font License, see the licence files)
+- `fonts/`: self-hosted Archivo and Source Serif 4, plus STIX Two Text, IBM Plex Sans and JetBrains Mono for the notes (all SIL Open Font License, see the licence files)
 
 ## Preview locally
 
