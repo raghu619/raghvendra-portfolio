@@ -59,6 +59,21 @@
 
       <section class="section" id="notes" aria-labelledby="notes-title">
         <h2 id="notes-title">Notes</h2>
+        <article class="work-item" aria-labelledby="note-llama">
+          <div>
+            <h3 id="note-llama"><a href="notes/llama-in-pictures/">Llama 3.2 in pictures</a></h3>
+            <p class="work-item__q">Week 7 of Ed Donner's LLM Engineering course prints Llama 3.2 3B as 26 lines of code. This follows one product title through them, from text to a category, one picture at a time.</p>
+            <ul class="findings">
+              <li>Attention drawn as a small search that every token runs, like RAG inside the model.</li>
+              <li>Why k_proj is 1,024 wide: 24 question heads share 8 sets of labels and messages.</li>
+              <li>Two thirds of the 3.2 billion numbers sit in the MLP, and LoRA can attach to 7 of the 26 lines.</li>
+            </ul>
+            <a class="work-item__cta" href="notes/llama-in-pictures/">Open the explainer</a>
+          </div>
+          <a class="work-item__img" href="notes/llama-in-pictures/" tabindex="-1" aria-hidden="true">
+            <img src="assets/llama-in-pictures/og-llama-in-pictures.png" width="1200" height="630" alt="">
+          </a>
+        </article>
         <article class="work-item" aria-labelledby="note-dnn">
           <div>
             <h3 id="note-dnn"><a href="notes/deep-neural-network/">But what is Ed's deep neural network?</a></h3>

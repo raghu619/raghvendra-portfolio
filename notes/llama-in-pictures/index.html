@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Llama 3.2 in pictures | Raghvendra Rao Koduri</title>
+  <meta name="description" content="A picture-first walk through the 26 lines that print(model) shows for Llama 3.2 3B. Follow one product title from text to a category, with scenes you can play.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Llama 3.2 in pictures">
+  <meta property="og:description" content="What the 26 lines of print(model) do, one picture at a time. Follow one product title through Llama 3.2 3B, from text to a category.">
+  <meta property="og:url" content="https://raghvendra-rao-koduri.vercel.app/notes/llama-in-pictures/">
+  <meta property="og:image" content="https://raghvendra-rao-koduri.vercel.app/assets/llama-in-pictures/og-llama-in-pictures.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Llama 3.2 in pictures: the token case asks a question and gives 81% of its attention to phone.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#f1f3f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121822" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="../../fonts/archivo-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../fonts/source-serif-4-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+@font-face{font-family:"Archivo Variable";font-style:normal;font-display:swap;font-weight:100 900;font-stretch:62% 125%;src:url("../../fonts/archivo-latin-standard-normal.woff2") format("woff2-variations");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Archivo Variable";font-style:normal;font-display:swap;font-weight:100 900;font-stretch:62% 125%;src:url("../../fonts/archivo-latin-ext-standard-normal.woff2") format("woff2-variations");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Source Serif 4 Variable";font-style:normal;font-display:swap;font-weight:200 900;src:url("../../fonts/source-serif-4-latin-standard-normal.woff2") format("woff2-variations")}
+@font-face{font-family:"Source Serif 4 Variable";font-style:italic;font-display:swap;font-weight:200 900;src:url("../../fonts/source-serif-4-latin-standard-italic.woff2") format("woff2-variations")}
+@font-face{font-family:"JetBrains Mono";src:url("../../fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url("../../fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+/* Layout: an illustrated lesson. Paper page in the portfolio's design system, with dark "screens" for every
+   animated scene, the way a math video sits inside an article. One idea per scene: picture, then plain words,
+   then the printout line it explains. Stage colours carry meaning everywhere: gold asks, blue gets matched,
+   green gets added. */
+:root{
+  --paper:#f1f3f5; --surface:#ffffff; --ink:#1b2232; --muted:#5a6372; --rule:#d5dae1; --aisle:#1e4fb4;
+  --tag:#ffd43b; --tag-ink:#1b2232; --code:#e6eaf0;
+  --s-bg:#0b0f17; --s-edge:#0b0f17; --s-panel:#121a28; --s-line:#26324a; --s-grid:#151d2b;
+  --s-ink:#e8ecf3; --s-soft:#9aa6ba; --s-dim:#5d6a80;
+  --s-q:#c08a00; --s-k:#4f8ff0; --s-add:#1fa67a;
+  --display:"Archivo Variable","Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Serif 4 Variable","Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121822; --surface:#19202c; --ink:#e5e9ef; --muted:#a3adbe; --rule:#2c3547; --aisle:#8fb0ff;
+    --tag:#ffd43b; --tag-ink:#1b2232; --code:#1d2532; --s-edge:#2c3547;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121822; --surface:#19202c; --ink:#e5e9ef; --muted:#a3adbe; --rule:#2c3547; --aisle:#8fb0ff;
+  --tag:#ffd43b; --tag-ink:#1b2232; --code:#1d2532; --s-edge:#2c3547;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1.125rem;line-height:1.62;font-optical-sizing:auto}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--paper)}
+a{color:var(--aisle);text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid var(--aisle);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;color:var(--ink)}
+h1{font-size:clamp(2.5rem, 7vw, 4.6rem);font-weight:820;font-stretch:118%;line-height:.98;letter-spacing:-.012em}
+h2{font-size:clamp(1.6rem, 3.6vw, 2.35rem);font-weight:780;font-stretch:112%;line-height:1.08}
+h3{font-size:clamp(1.15rem, 2.2vw, 1.35rem);font-weight:720;font-stretch:108%;line-height:1.25}
+p{margin:0;max-width:64ch}
+code{font-family:var(--mono);font-size:.82em;background:var(--code);border-radius:3px;padding:.06em .34em;overflow-wrap:anywhere}
+b,strong{font-weight:650}
+.q-word{font-family:var(--mono);font-size:.86em;white-space:nowrap}
+
+/* sticky chapter bar */
+.bar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:9;background:var(--paper);border-bottom:1px solid var(--rule)}
+.bar-in{max-width:1100px;margin-inline:auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:8px;display:flex;align-items:center;gap:14px}
+.bar-title{font-family:var(--display);font-weight:760;font-stretch:112%;font-size:.86rem;white-space:nowrap;color:var(--ink);text-decoration:none}
+.chapnav{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.chapnav a{display:inline-flex;align-items:baseline;gap:5px;padding:4px 8px;border-radius:4px;font-family:var(--display);font-size:.8rem;font-weight:600;color:var(--muted);text-decoration:none;line-height:1.3}
+.chapnav a b{font-weight:760;color:var(--ink)}
+.chapnav a:hover{background:color-mix(in oklab, var(--ink) 7%, transparent)}
+.chapnav a[aria-current="true"]{background:var(--ink);color:var(--paper)}
+.chapnav a[aria-current="true"] b{color:var(--paper)}
+@media (max-width:860px){
+  .bar-title{display:none}
+  .chapnav{margin-left:0;width:100%;justify-content:space-between;gap:2px}
+  .chapnav a{padding:4px 6px}
+  .chapnav a span{display:none}
+  .chapnav a[aria-current="true"] span{display:inline}
+}
+
+.wrap{max-width:1100px;margin-inline:auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0 80px}
+
+/* hero */
+.hero{display:grid;gap:20px;padding-block:44px 28px}
+.byline{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--display);font-size:.82rem;font-weight:550;color:var(--muted)}
+.lede{font-size:1.25rem;line-height:1.55;max-width:58ch}
+.how{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;font-family:var(--display);font-size:.9rem;font-weight:550;color:var(--muted)}
+.key{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px 18px}
+.key li{display:inline-flex;align-items:center;gap:7px;color:var(--ink)}
+.kd{display:inline-block;width:12px;height:12px;border-radius:50%}
+.kq{background:var(--s-q)} .kk{background:var(--s-k)} .kadd{background:var(--s-add)}
+
+/* the whole idea */
+.flow{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;margin-top:6px}
+.flow > *{min-width:0}
+.fbox{flex:0 1 9em;background:var(--surface);border:1px solid var(--rule);border-top:3px solid var(--tag);border-radius:4px;padding:8px 12px;font-family:var(--mono);font-size:.92rem;display:flex;align-items:center}
+.fstop{display:grid;gap:2px;align-content:start;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:9px 12px 10px;text-decoration:none;color:var(--ink);min-width:0;flex:1 1 0}
+.fstop:hover{border-color:var(--aisle)}
+.fstop b{font-family:var(--display);font-weight:760;font-stretch:108%;font-size:1rem}
+.fstop b i{font-style:normal;color:var(--aisle);margin-right:6px}
+.fstop span{font-size:.92rem;line-height:1.35;color:var(--muted)}
+.fgroup{display:flex;gap:8px;border:1.5px dashed var(--muted);border-radius:8px;padding:22px 8px 8px;position:relative;flex:2.2 1 0}
+.fgroup > .glabel{position:absolute;top:4px;left:10px;font-family:var(--display);font-size:.74rem;font-weight:700;letter-spacing:.06em;color:var(--muted);text-decoration:none}
+.farrow{flex:none;display:flex;align-items:center;color:var(--muted);font-family:var(--display);font-weight:700}
+@media (max-width:1020px){.flow{flex-direction:column}.flow > *{flex:none}.farrow{justify-content:center;align-self:center;transform:rotate(90deg)}.fbox{align-self:flex-start}}
+@media (max-width:560px){.fgroup{flex-direction:column}.fgroup .fstop{flex:none}}
+
+/* chapters */
+.ch{display:grid;gap:22px;padding-block:56px 8px;scroll-margin-top:64px}
+.ch + .ch{border-top:1px solid var(--rule)}
+.ch-head{display:grid;gap:8px}
+.eyebrow{font-family:var(--display);font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--aisle)}
+.sub-head{display:grid;gap:10px;padding-top:18px;scroll-margin-top:64px}
+.prose{display:grid;gap:14px}
+.small{font-size:.94rem;color:var(--muted)}
+.bridge{background:var(--surface);border-left:4px solid var(--tag);border-radius:0 6px 6px 0;padding:14px 18px;display:grid;gap:6px;max-width:72ch}
+.bridge h4{margin:0;font-family:var(--display);font-size:1rem;font-weight:720}
+.bridge p{max-width:none}
+
+/* stage = a dark screen with a scene */
+@media (max-width:560px){.stage{padding:14px 12px 12px}}
+.stage{background:var(--s-bg);color:var(--s-ink);border:1px solid var(--s-edge);border-radius:12px;padding:18px 18px 14px;display:grid;gap:12px;margin:0;min-width:0}
+.art{display:grid;gap:18px;align-items:center;min-width:0}
+.art > *{min-width:0}
+.art.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.art.two.lw{grid-template-columns:minmax(0,.62fr) minmax(0,1fr)}
+@media (max-width:760px){.art.two,.art.two.lw{grid-template-columns:minmax(0,1fr)}}
+.stage svg{display:block;width:100%;height:auto;max-width:460px;margin-inline:auto;overflow:visible}
+.sub{font-family:var(--body);font-size:1.02rem;line-height:1.5;color:var(--s-ink);text-align:center;max-width:62ch;margin-inline:auto;min-height:3em}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;border-top:1px solid var(--s-line);padding-top:12px}
+.play{font-family:var(--display);font-weight:700;font-size:.88rem;padding:7px 16px 7px 13px;border-radius:999px;border:0;background:var(--s-ink);color:var(--s-bg);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.play::before{content:"";width:0;height:0;border-left:9px solid currentColor;border-top:6px solid transparent;border-bottom:6px solid transparent}
+.playing .play::before{width:9px;height:11px;border:0;background:linear-gradient(90deg,currentColor 0 3px,transparent 3px 6px,currentColor 6px 9px)}
+.play:focus-visible,.chip-step:focus-visible,.sbtn:focus-visible{outline:2px solid var(--s-k);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip-step{font-family:var(--display);font-size:.8rem;font-weight:620;padding:5px 10px;border-radius:999px;border:1px solid var(--s-line);background:transparent;color:var(--s-soft);cursor:pointer}
+.chip-step:hover{color:var(--s-ink);border-color:var(--s-soft)}
+.chip-step.on{background:var(--s-panel);color:var(--s-ink);border-color:var(--s-soft)}
+.scrub{flex:1 1 140px;min-width:120px;accent-color:var(--s-k)}
+.sbtn{font-family:var(--display);font-size:.84rem;font-weight:650;padding:7px 12px;border-radius:6px;border:1px solid var(--s-line);background:var(--s-panel);color:var(--s-ink);cursor:pointer}
+.sbtn:hover{border-color:var(--s-soft)}
+.stage label{font-family:var(--display);font-size:.86rem;font-weight:620;color:var(--s-ink)}
+.stage output{font-family:var(--mono);font-weight:500}
+.stage input[type="range"]{width:100%;accent-color:var(--s-k)}
+.readout{font-family:var(--mono);font-size:.86rem;line-height:1.55;color:var(--s-ink);background:var(--s-panel);border-radius:6px;padding:9px 12px}
+.panel-ctl{display:grid;gap:12px;align-content:center;max-width:420px;margin-inline:auto;width:100%}
+
+/* svg vocabulary */
+.stage svg .grid{stroke:var(--s-grid);stroke-width:1}
+.stage svg .axis{stroke:var(--s-line);stroke-width:1}
+.stage svg .dot{fill:var(--s-soft)}
+.stage svg .dot.faint{fill:var(--s-dim)}
+.stage svg .origin{fill:var(--s-soft)}
+.stage svg .wl{font:500 11.5px var(--display);fill:var(--s-soft)}
+.stage svg .wl.hi{fill:var(--s-ink);font-weight:750}
+.stage svg .cl{font:700 9.5px var(--display);letter-spacing:.12em;fill:var(--s-dim)}
+.stage svg .lb{font:600 12px var(--display);fill:var(--s-ink)}
+.stage svg .lb.soft{fill:var(--s-soft);font-weight:500}
+.stage svg .lab{font:700 9.5px var(--display);letter-spacing:.1em;fill:var(--s-soft)}
+.stage svg .mn{font:500 11px var(--mono);fill:var(--s-ink)}
+.stage svg .mn.soft{fill:var(--s-soft)}
+.stage svg .mn.dim{fill:var(--s-dim)}
+.stage svg .mn.on{font-weight:500}
+.stage svg .var{font:italic 650 15px var(--body)}
+.stage svg .tq{fill:var(--s-q)} .stage svg .tk{fill:var(--s-k)} .stage svg .tadd{fill:var(--s-add)}
+.stage svg .arr line{stroke:currentColor} .stage svg .arr polygon{fill:currentColor}
+.stage svg .arr.dash line{stroke-dasharray:4 4}
+.stage svg .guide{stroke:var(--s-soft);stroke-width:1;stroke-dasharray:3 4;fill:none}
+.stage svg .ring{fill:none;stroke:var(--s-soft);stroke-width:1.2;stroke-dasharray:4 5}
+.stage svg .panelbg{fill:var(--s-panel);stroke:var(--s-line);stroke-width:1}
+.c-ink{color:var(--s-ink)} .c-q{color:var(--s-q)} .c-k{color:var(--s-k)} .c-add{color:var(--s-add)} .c-soft{color:var(--s-soft)} .c-dim{color:var(--s-dim)}
+.f-q{fill:var(--s-q)} .f-k{fill:var(--s-k)} .f-add{fill:var(--s-add)} .f-ink{fill:var(--s-ink)} .f-soft{fill:var(--s-soft)} .f-dim{fill:var(--s-dim)}
+
+/* chapter 1: tokens */
+.chopline{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;font-family:var(--mono);font-size:clamp(1.05rem, 2.8vw, 1.55rem);padding-block:18px 6px;--split:1;--ids:1}
+.tk{display:inline-flex;flex-direction:column;align-items:center;min-width:0;margin:0 calc(var(--split) * 5px) 10px;padding:calc(var(--split) * 6px) calc(var(--split) * 10px) calc(var(--split) * 5px);border:1.5px solid color-mix(in srgb, var(--s-line) calc(var(--split) * 100%), transparent);border-radius:7px;background:color-mix(in srgb, var(--s-panel) calc(var(--split) * 100%), transparent)}
+.tk b{font-weight:500;white-space:pre}
+.tk i{font-style:normal;font-size:.6em;color:var(--s-soft);opacity:var(--ids);max-height:calc(var(--ids) * 1.7em);overflow:hidden;font-variant-numeric:tabular-nums}
+.tk-start{max-width:calc(var(--split) * 16em);overflow:hidden;opacity:var(--split)}
+.tk-start b{color:var(--s-soft)}
+.chopline .sp{opacity:var(--split);color:var(--s-dim)}
+.try{display:grid;gap:10px;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;max-width:820px}
+.try label{font-family:var(--display);font-weight:700;font-size:.95rem}
+.try input{font:inherit;font-family:var(--mono);font-size:1rem;width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:5px;background:var(--paper);color:var(--ink)}
+.try-status{font-size:.88rem;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.presets button{font-family:var(--mono);font-size:.82rem;padding:5px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);color:var(--ink);cursor:pointer}
+.presets button:hover{border-color:var(--aisle)}
+.try-out{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;min-height:3.2em}
+.ttok{display:inline-grid;justify-items:center;padding:4px 9px 3px;background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--tag);border-radius:4px;font-family:var(--mono);line-height:1.3}
+.ttok b{font-weight:500;font-size:.95rem;white-space:pre}
+.ttok i{font-style:normal;font-size:.68rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.ttok .sp{color:var(--muted)}
+.try-count{font-family:var(--display);font-size:.85rem;font-weight:600;color:var(--muted);align-self:center;margin-left:4px}
+
+/* attention token row */
+.tokrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;font-family:var(--mono);font-size:.95rem}
+.trt{padding:4px 9px;border-radius:5px;border:1.5px solid var(--s-line);background:var(--s-panel);white-space:pre;transition:opacity .2s}
+.trt.asker{border-color:color-mix(in srgb, var(--s-q) calc(var(--on, 1) * 100%), var(--s-line))}
+.tr-note{font-family:var(--display);font-size:.78rem;color:var(--s-soft);margin-left:4px}
+
+/* in the printout */
+.inprint{background:var(--s-bg);color:var(--s-ink);border:1px solid var(--s-edge);border-radius:8px;padding:12px 16px 14px;display:grid;gap:8px}
+.ip-label{font-family:var(--display);font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--s-soft)}
+.ip{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.ip li{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:4px 18px;align-items:baseline}
+.ip code{background:none;padding:0;font-size:.82rem;overflow-wrap:anywhere;line-height:1.45}
+.ip span{font-size:.95rem;line-height:1.45;color:var(--s-ink)}
+.ip .none{color:var(--s-soft);font-style:italic}
+@media (max-width:760px){.ip li{grid-template-columns:minmax(0,1fr)}}
+
+/* share bar */
+.sharebar{display:flex;gap:2px;height:44px;margin-top:2px}
+.sb{display:flex;align-items:center;justify-content:center;min-width:0;padding:0 8px;font-family:var(--display);font-size:.84rem;font-weight:700;white-space:nowrap;overflow:hidden}
+.sb:first-child{border-radius:5px 0 0 5px}.sb:last-child{border-radius:0 5px 5px 0}
+.sb-table{background:var(--s-dim);color:var(--s-ink)}
+.sb-talk{background:var(--s-k);color:#0b0f17}
+.sb-think{background:var(--s-q);color:#0b0f17}
+.sb-legend{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.92rem;color:var(--s-ink)}
+.sb-legend li{display:inline-flex;align-items:center;gap:8px}
+.sb-legend i{display:inline-block;width:11px;height:11px;border-radius:2px}
+.sb-legend b{font-family:var(--mono);font-weight:500;font-size:.86rem}
+
+/* recipe */
+.recipe{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.recipe li{display:grid;gap:2px;padding:8px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--rule);position:relative;min-width:0}
+.recipe li b{font-family:var(--display);font-weight:760;font-size:.98rem}
+.recipe li code{background:none;padding:0;font-size:.76rem;color:var(--muted)}
+.recipe li + li::before{content:"→";position:absolute;left:-8px;top:50%;transform:translate(-50%,-50%);font-family:var(--display);color:var(--muted);font-size:.8rem}
+.recipe .r-talk{border-top:3px solid var(--s-k)} .recipe .r-think{border-top:3px solid var(--s-q)} .recipe .r-add{border-top:3px solid var(--s-add)} .recipe .r-norm{border-top:3px solid var(--muted)}
+@media (max-width:640px){.recipe{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.recipe li + li::before{display:none}}
+
+/* decoded printout */
+.decoded{display:grid;gap:0;font-size:.95rem}
+.drow{display:grid;grid-template-columns:2.2em minmax(0,1.3fr) minmax(0,1fr);gap:2px 16px;padding:5px 4px;border-bottom:1px solid var(--s-grid);align-items:baseline}
+.drow:last-child{border-bottom:0}
+.drow .n{font-family:var(--mono);font-size:.72rem;color:var(--s-dim);text-align:right;font-variant-numeric:tabular-nums}
+.drow code{background:none;padding:0;font-size:.8rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;padding-left:calc(var(--d) * 1.4ch + 2ch);text-indent:-2ch}
+.drow .g{font-size:.95rem;line-height:1.45;color:var(--s-ink)}
+.drow .g a{color:var(--s-soft);font-family:var(--display);font-size:.78rem;font-weight:650;margin-left:6px;white-space:nowrap}
+.drow.br .g{display:none}
+.dkey{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--display);font-size:.84rem;color:var(--s-soft);padding:2px 4px 6px}
+.dkey span{display:inline-flex;align-items:center;gap:7px}
+.dkey i{display:inline-block;width:10px;height:10px;border-radius:50%}
+@media (max-width:760px){.drow{grid-template-columns:2em minmax(0,1fr)}.drow .g{grid-column:2}.drow code{padding-left:calc(var(--d) * .8ch + 2ch)}}
+
+/* lora */
+.lora-read{display:grid;gap:8px}
+.lora-read .big{font-family:var(--display);font-size:1.6rem;font-weight:780;font-stretch:108%;line-height:1.1;color:var(--s-add)}
+.lora-read p{font-size:.98rem;line-height:1.5;color:var(--s-ink)}
+
+/* check */
+.quiz{display:grid;gap:10px;max-width:820px}
+.quiz details{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:12px 16px}
+.quiz summary{cursor:pointer;font-family:var(--display);font-weight:650;font-size:1rem;line-height:1.4}
+.quiz details[open] summary{margin-bottom:8px}
+footer{border-top:1px solid var(--rule);margin-top:56px;padding-top:24px;display:grid;gap:12px;font-size:.95rem;color:var(--muted)}
+footer p{max-width:72ch}
+footer nav{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--display);font-weight:600}
+
+/* site chrome, matching the portfolio's other pages */
+.skip-link{position:absolute;left:-999px;top:.5rem;background:var(--ink);color:var(--paper);padding:.5rem .9rem;border-radius:4px;font-family:var(--display);font-weight:600;z-index:20}
+.skip-link:focus{left:.5rem}
+.site-top{max-width:1100px;margin-inline:auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.site-bar{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;justify-content:space-between;align-items:baseline;padding-block:1.2rem .9rem;font-family:var(--display)}
+.site-bar .site-name{color:var(--ink);text-decoration:none;font-weight:760;font-stretch:112%;font-size:1.02rem}
+.site-bar nav{display:flex;flex-wrap:wrap;gap:.4rem 1.3rem;font-size:.95rem}
+.site-bar nav a{color:var(--ink);text-decoration:none;font-weight:560}
+.site-bar nav a:hover,.site-bar nav a[aria-current="page"]{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.3em}
+.site-foot{display:flex;flex-wrap:wrap;gap:.75rem 2rem;justify-content:space-between;margin-top:12px;padding-top:18px;border-top:1px solid var(--rule);font-family:var(--display);font-size:.92rem}
+.site-foot nav{display:flex;flex-wrap:wrap;gap:.4rem 1.3rem}
+.site-foot a{color:var(--ink);font-weight:560;text-decoration:none}
+.site-foot a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the explainer</a>
+<div class="site-top"><header class="site-bar"><a class="site-name" href="../../">Raghvendra Rao Koduri</a><nav aria-label="Site"><a href="../../#work">Work</a><a href="../../#notes" aria-current="page">Notes</a><a href="https://github.com/raghu619">GitHub</a><a href="https://www.linkedin.com/in/raghvendra-rao-koduri-6b339595/">LinkedIn</a></nav></header></div>
+<div class="bar">
+  <div class="bar-in">
+    <a class="bar-title" href="#top">Llama 3.2 in pictures</a>
+    <nav class="chapnav" aria-label="Chapters">
+      <a href="#c1" data-sec="c1"><b>1</b><span>Chop</span></a>
+      <a href="#c2" data-sec="c2"><b>2</b><span>Look up</span></a>
+      <a href="#c3" data-sec="c3"><b>3</b><span>Talk</span></a>
+      <a href="#c4" data-sec="c4"><b>4</b><span>Think</span></a>
+      <a href="#c5" data-sec="c5"><b>5</b><span>Repeat</span></a>
+      <a href="#c6" data-sec="c6"><b>6</b><span>Score</span></a>
+      <a href="#c7" data-sec="c7"><b>7</b><span>Printout</span></a>
+      <a href="#c8" data-sec="c8"><b>8</b><span>LoRA</span></a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap" id="top">
+<main id="main">
+
+<section class="hero">
+  <div class="byline"><span>Raghvendra Rao Koduri</span><span>Learning notes</span><span>30 October 2026</span></div>
+  <h1>Llama 3.2 in pictures</h1>
+  <p class="lede">Printing a model in Python gives you 26 lines that look like code. This page turns them into pictures. We follow one product title, <span class="q-word">Black phone case</span>, through Llama 3.2 3B and watch it turn into a category.</p>
+  <div class="how">
+    <span>Every scene has a Play button, or drag its slider.</span>
+    <ul class="key" aria-label="Colour key for every scene">
+      <li><i class="kd kq"></i>gold asks</li>
+      <li><i class="kd kk"></i>blue gets matched</li>
+      <li><i class="kd kadd"></i>green gets added</li>
+    </ul>
+  </div>
+</section>
+
+<section class="ch" id="c0" aria-labelledby="h-c0">
+  <div class="ch-head">
+    <span class="eyebrow">The whole idea</span>
+    <h2 id="h-c0">One picture first</h2>
+  </div>
+  <div class="prose">
+    <p>The model has one job: read the text so far and guess the next token. Fine-tuning will teach it that after <span class="q-word">Category:</span> the right next token is the product’s category.</p>
+  </div>
+  <div class="flow" aria-label="The six steps from text to a guess">
+    <div class="fbox">Black phone case. Category:</div>
+    <span class="farrow" aria-hidden="true">→</span>
+    <a class="fstop" href="#c1"><b><i>1</i>Chop</b><span>cut the text into numbered tokens</span></a>
+    <span class="farrow" aria-hidden="true">→</span>
+    <a class="fstop" href="#c2"><b><i>2</i>Look up</b><span>give each token an arrow</span></a>
+    <span class="farrow" aria-hidden="true">→</span>
+    <div class="fgroup">
+      <a class="glabel" href="#c5">5 · REPEAT 28 TIMES</a>
+      <a class="fstop" href="#c3"><b><i>3</i>Talk</b><span>tokens share context</span></a>
+      <a class="fstop" href="#c4"><b><i>4</i>Think</b><span>each token adds what it knows</span></a>
+    </div>
+    <span class="farrow" aria-hidden="true">→</span>
+    <a class="fstop" href="#c6"><b><i>6</i>Score</b><span>compare with every token, pick the best</span></a>
+    <span class="farrow" aria-hidden="true">→</span>
+    <div class="fbox">␣Electronics</div>
+  </div>
+  <div class="prose">
+    <p>Each of the 26 printed lines belongs to one of these steps. By the end of the page you should be able to point at any line and say what it does.</p>
+  </div>
+</section>
+
+<!-- =============== 1 CHOP =============== -->
+<section class="ch" id="c1" aria-labelledby="h-c1">
+  <div class="ch-head">
+    <span class="eyebrow">1 · Chop</span>
+    <h2 id="h-c1">Cut the text into tokens</h2>
+  </div>
+  <div class="prose">
+    <p>A model can’t read letters. A tokenizer cuts the text into pieces called tokens and swaps each one for its ID, a number from 0 to 128,255. A special start token always goes first.</p>
+  </div>
+  <figure class="stage" id="st-chop">
+    <div class="art">
+      <div class="chopline" id="chop" role="img" aria-label="Black phone case. Category: becomes 7 tokens: begin_of_text 128000, Black 14755, phone 4641, case 1162, full stop 13, Category 10260, colon 25.">
+        <span class="tk tk-start"><b>&lt;|begin_of_text|&gt;</b><i>128000</i></span>
+        <span class="tk"><b>Black</b><i>14755</i></span>
+        <span class="tk"><b><span class="sp">␣</span>phone</b><i>4641</i></span>
+        <span class="tk"><b><span class="sp">␣</span>case</b><i>1162</i></span>
+        <span class="tk"><b>.</b><i>13</i></span>
+        <span class="tk"><b><span class="sp">␣</span>Category</b><i>10260</i></span>
+        <span class="tk"><b>:</b><i>25</i></span>
+      </div>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <div class="chips"><button class="chip-step" type="button">1 Cut</button><button class="chip-step" type="button">2 Number</button></div>
+      <input class="scrub" type="range" id="scrub-chop" aria-label="Scrub through the tokenizer scene">
+    </div>
+  </figure>
+  <div class="prose">
+    <p>Common words are one token. Rare words are cut into several pieces, which is why the model counts tokens, not words.</p>
+  </div>
+  <div class="try">
+    <label for="try-in">Try your own product title</label>
+    <input id="try-in" type="text" value="Black phone case" autocomplete="off" spellcheck="false" maxlength="160">
+    <div class="presets" id="presets" aria-label="Examples"></div>
+    <div class="try-out" id="try-out" aria-live="polite"></div>
+    <p class="try-status" id="try-status">The examples are ready to go. Typing your own loads the real Llama 3 tokenizer, about 3 MB.</p>
+  </div>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip"><li><span class="none">Nothing yet. The tokenizer runs before the model, so the printout starts with what happens to these IDs.</span></li></ul>
+  </div>
+</section>
+
+<!-- =============== 2 LOOK UP =============== -->
+<section class="ch" id="c2" aria-labelledby="h-c2">
+  <div class="ch-head">
+    <span class="eyebrow">2 · Look up</span>
+    <h2 id="h-c2">Give every token an arrow</h2>
+  </div>
+  <div class="prose">
+    <p>The model keeps a table with one row for each of its 128,256 tokens. Each row is a list of 3,072 numbers. Think of that list as an arrow: each number says how far to go along one direction.</p>
+  </div>
+  <figure class="stage" id="st-look">
+    <div class="art two lw">
+      <svg id="svg-table" style="max-width:265px" viewBox="0 0 230 300" role="img" aria-label="The lookup table: 128,256 rows. The rows for case, phone and Black are highlighted."></svg>
+      <svg id="svg-look" style="max-width:440px" viewBox="0 0 380 300" role="img" aria-label="A two-direction sketch of token arrows. Black sits with the colours, phone with the electronics, and case alone near the middle-right."></svg>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <div class="chips"><button class="chip-step" type="button">1 Find rows</button><button class="chip-step" type="button">2 Draw arrows</button><button class="chip-step" type="button">3 Neighbours</button></div>
+      <input class="scrub" type="range" id="scrub-look" aria-label="Scrub through the lookup scene">
+    </div>
+  </figure>
+  <div class="prose">
+    <p>Training placed tokens with related meanings in similar directions. My StyleSense RAG project did the same with text-embedding-3-small, turning whole product descriptions into arrows. This table does it for single tokens, and a token’s row never changes with context.</p>
+    <p class="small">We can only draw 2 of the 3,072 directions, so the map is a sketch. Positions are illustrative.</p>
+  </div>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip"><li><code class="c-ink">(embed_tokens): Embedding(128256, 3072)</code><span>The table: 128,256 rows of 3,072 numbers.</span></li></ul>
+  </div>
+</section>
+
+<!-- =============== 3 TALK =============== -->
+<section class="ch" id="c3" aria-labelledby="h-c3">
+  <div class="ch-head">
+    <span class="eyebrow">3 · Talk</span>
+    <h2 id="h-c3">Let the tokens talk</h2>
+  </div>
+
+  <div class="sub-head" id="c3-problem"><h3>The problem: one arrow per token</h3></div>
+  <div class="prose">
+    <p><span class="q-word">␣case</span> has one row, so it starts with the same arrow in <span class="q-word">phone case</span>, <span class="q-word">pencil case</span> and <span class="q-word">pillow case</span>. One arrow can’t point at electronics, office supplies and bedding at once. The word before it knows which one you mean.</p>
+  </div>
+  <figure class="stage" id="st-problem">
+    <div class="art">
+      <svg id="svg-problem" style="max-width:520px" viewBox="0 0 380 300" role="img" aria-label="The arrow for case sits between neighbourhoods. Dotted arrows show where it should go: up to electronics for phone case, down to home for pillow case, far left to office for pencil case."></svg>
+    </div>
+    <p class="sub">Same token, same starting arrow. Where it should end up depends on the word before it.</p>
+  </figure>
+
+  <div class="sub-head" id="c3-ask"><h3>How a token asks</h3></div>
+  <div class="prose">
+    <p>Attention lets each token pull in information from the tokens before it. Think of it as a small search that every token runs.</p>
+  </div>
+  <figure class="stage" id="st-attn">
+    <div class="art">
+      <div class="tokrow" aria-hidden="true">
+        <span class="trt">Black</span><span class="trt">␣phone</span><span class="trt asker" id="asker">␣case</span><span class="trt later">.</span><span class="trt later">␣Category</span><span class="trt later">:</span>
+        <span class="tr-note" id="later-note">later tokens are hidden from ␣case</span>
+      </div>
+      <div class="art two">
+        <svg id="svg-qk" style="max-width:370px" viewBox="0 0 320 340" role="img" aria-label="The question from case, in gold, and the labels of Black, phone and case, in blue. Phone's label points almost the same way as the question, so it gets the highest score and 81 percent of the attention."></svg>
+        <svg id="svg-att" style="max-width:440px" viewBox="0 0 380 300" role="img" aria-label="Messages, in green, are scaled by each token's share and added to the arrow for case, which moves toward the electronics neighbourhood."></svg>
+      </div>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <div class="chips"><button class="chip-step" type="button">1 Ask</button><button class="chip-step" type="button">2 Match</button><button class="chip-step" type="button">3 Share</button><button class="chip-step" type="button">4 Add</button></div>
+      <input class="scrub" type="range" id="scrub-attn" aria-label="Scrub through the attention scene">
+    </div>
+  </figure>
+  <div class="prose">
+    <p>That’s attention: one question, a score for each earlier token, shares that add up to 100%, and a blend of messages added to the arrow.</p>
+    <p class="small">Real attention also divides each score by √128 before softmax, which stops the shares from becoming all or nothing. The toy arrows here are short enough to skip that step.</p>
+  </div>
+  <aside class="bridge">
+    <h4>It’s RAG inside the model</h4>
+    <p>In StyleSense, a query embedding is compared with every product embedding and the best matches come back. Attention runs the same kind of search between tokens. The differences: every token gets a share instead of a top-k cut, and the question, label and message are all learned in training.</p>
+  </aside>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip">
+      <li><code class="c-ink">(self_attn): LlamaAttention(</code><span>Talk.</span></li>
+      <li><code class="c-q">(q_proj): Linear(in_features=3072, out_features=3072, bias=False)</code><span>Makes each token’s question.</span></li>
+      <li><code class="c-k">(k_proj): Linear(in_features=3072, out_features=1024, bias=False)</code><span>Makes each token’s label.</span></li>
+      <li><code class="c-add">(v_proj): Linear(in_features=3072, out_features=1024, bias=False)</code><span>Makes each token’s message.</span></li>
+      <li><code class="c-add">(o_proj): Linear(in_features=3072, out_features=3072, bias=False)</code><span>Turns the blended messages into one edit.</span></li>
+    </ul>
+  </div>
+
+  <div class="sub-head" id="c3-heads"><h3>24 questions at once</h3></div>
+  <div class="prose">
+    <p>One search can look for one kind of thing, so each layer runs 24 searches side by side, called heads. One head might look for the item type, another for colours, another for the word just before.</p>
+  </div>
+  <figure class="stage" id="st-heads">
+    <div class="art">
+      <svg id="svg-heads" style="max-width:560px" viewBox="0 0 380 214" role="img" aria-label="24 gold question heads. In classic attention each has its own label and message set. In Llama 3.2, each group of 3 shares one, so there are 8 sets."></svg>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <div class="chips"><button class="chip-step" type="button">1 Classic</button><button class="chip-step" type="button">2 Llama</button></div>
+      <input class="scrub" type="range" id="scrub-heads" aria-label="Scrub through the heads scene">
+    </div>
+  </figure>
+  <div class="prose">
+    <p>That’s where the 1,024 in the printout comes from: 8 shared sets × 128 numbers. The questions still need 24 × 128 = 3,072. The saving matters while the model writes, because it keeps every earlier token’s labels and messages in memory. At 8,192 tokens of text that’s 0.94 GB instead of 2.82 GB.</p>
+  </div>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip">
+      <li><code class="c-q">(q_proj): … out_features=3072</code><span>24 heads × 128 numbers.</span></li>
+      <li><code class="c-k">(k_proj): … out_features=1024</code><span>8 shared sets × 128.</span></li>
+      <li><code class="c-add">(v_proj): … out_features=1024</code><span>8 shared sets × 128.</span></li>
+    </ul>
+  </div>
+
+  <div class="sub-head" id="c3-order"><h3>Keeping track of word order</h3></div>
+  <div class="prose">
+    <p>A search by similarity can’t tell <span class="q-word">phone case</span> from <span class="q-word">case phone</span>: same tokens, same scores. So before matching, every question and label is turned like a clock hand, one notch further for each position in the text.</p>
+  </div>
+  <figure class="stage" id="st-clock">
+    <div class="art two">
+      <svg id="svg-clock" style="max-width:345px" viewBox="0 0 300 300" role="img" aria-label="A clock with 18 positions. The gold hand is a question, the blue hand a label. Their angle depends only on how far apart the two tokens are."></svg>
+      <div class="panel-ctl">
+        <label for="clk-gap">Distance between the two tokens <output id="clk-gap-out" for="clk-gap">1</output></label>
+        <input type="range" id="clk-gap" min="0" max="6" step="1" value="1">
+        <button class="sbtn" type="button" id="clk-move">Move both one token later</button>
+        <p class="readout" id="clk-read" aria-live="polite"></p>
+      </div>
+    </div>
+  </figure>
+  <div class="prose">
+    <p>Turning both hands by the same amount leaves the angle between them alone, so the match depends on how far apart two tokens are, not on where they sit. Llama turns 64 hands per head, some fast and some very slow, so it can tell neighbours apart and also measure long distances.</p>
+  </div>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip"><li><code class="c-ink">(rotary_emb): LlamaRotaryEmbedding()</code><span>The clock. The brackets are empty because it follows a fixed rule, with nothing to learn.</span></li></ul>
+  </div>
+</section>
+
+<!-- =============== 4 THINK =============== -->
+<section class="ch" id="c4" aria-labelledby="h-c4">
+  <div class="ch-head">
+    <span class="eyebrow">4 · Think</span>
+    <h2 id="h-c4">Let each token think</h2>
+  </div>
+  <div class="prose">
+    <p>After talking, each token thinks on its own. The MLP is a bank of 8,192 detectors. Each detector checks the arrow against its own direction, as if asking “is this a phone accessory?”. Detectors that fire add their own arrow back.</p>
+  </div>
+  <figure class="stage" id="st-mlp">
+    <div class="art two">
+      <svg id="svg-det" style="max-width:380px" viewBox="0 0 330 300" role="img" aria-label="Eight of the 8,192 detectors. Phone accessory, electronics and carried around fire. Stationery, bedding, size and food are dimmed to about zero."></svg>
+      <svg id="svg-mlp" style="max-width:440px" viewBox="0 0 380 300" role="img" aria-label="The lit detectors add their arrows, in green, and case moves into the electronics neighbourhood."></svg>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <div class="chips"><button class="chip-step" type="button">1 Check</button><button class="chip-step" type="button">2 Dim</button><button class="chip-step" type="button">3 Add</button></div>
+      <input class="scrub" type="range" id="scrub-mlp" aria-label="Scrub through the MLP scene">
+    </div>
+  </figure>
+  <div class="prose">
+    <p>This is where knowledge from training gets written into a token, like “phone cases are electronics accessories”. Real detectors rarely mean one tidy thing, so treat the labels as a cartoon of the idea.</p>
+  </div>
+  <div class="inprint" aria-label="Share of the model's 3.2 billion numbers">
+    <span class="ip-label">Where the 3.2 billion numbers live</span>
+    <div class="sharebar" role="img" aria-label="Lookup table 12 percent, talk 22 percent, think 66 percent.">
+      <span class="sb sb-table" style="flex:12.26 1 0">12%</span>
+      <span class="sb sb-talk" style="flex:21.93 1 0">22%</span>
+      <span class="sb sb-think" style="flex:65.80 1 0">66% think</span>
+    </div>
+    <ul class="sb-legend">
+      <li><i style="background:var(--s-dim)"></i>lookup table <b>0.39B</b></li>
+      <li><i style="background:var(--s-k)"></i>talk, 28 layers <b>0.70B</b></li>
+      <li><i style="background:var(--s-q)"></i>think, 28 layers <b>2.11B</b></li>
+    </ul>
+  </div>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip">
+      <li><code class="c-ink">(mlp): LlamaMLP(</code><span>Think.</span></li>
+      <li><code class="c-q">(gate_proj): Linear(in_features=3072, out_features=8192, bias=False)</code><span>How strongly each of the 8,192 detectors fires.</span></li>
+      <li><code class="c-q">(up_proj): Linear(in_features=3072, out_features=8192, bias=False)</code><span>How much each detector passes on.</span></li>
+      <li><code class="c-add">(down_proj): Linear(in_features=8192, out_features=3072, bias=False)</code><span>Each detector’s arrow, added back as one edit.</span></li>
+      <li><code class="c-q">(act_fn): SiLUActivation()</code><span>The dimmer.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- =============== 5 REPEAT =============== -->
+<section class="ch" id="c5" aria-labelledby="h-c5">
+  <div class="ch-head">
+    <span class="eyebrow">5 · Repeat</span>
+    <h2 id="h-c5">Keep steady, add, repeat 28 times</h2>
+  </div>
+
+  <div class="sub-head"><h3>Keep the arrows a steady size</h3></div>
+  <div class="prose">
+    <p>Every step adds to the arrows, so some could grow huge and drown out the rest. Before each talk and each think, the model rescales every arrow to the same size and keeps its direction. OpenAI’s embeddings come with length 1 for a similar reason: comparing two of them then compares only direction.</p>
+  </div>
+  <figure class="stage" id="st-norm">
+    <div class="art">
+      <svg id="svg-norm" style="max-width:360px" viewBox="0 0 300 260" role="img" aria-label="Seven arrows of different lengths are rescaled onto one circle. Their directions do not change."></svg>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <div class="chips"><button class="chip-step" type="button">1 Uneven</button><button class="chip-step" type="button">2 Rescaled</button></div>
+      <input class="scrub" type="range" id="scrub-norm" aria-label="Scrub through the rescale scene">
+    </div>
+  </figure>
+  <div class="prose"><p class="small">After rescaling, each of the 3,072 numbers gets its own learned volume knob, so directions can shift a little.</p></div>
+
+  <div class="sub-head"><h3>Add, don’t replace</h3></div>
+  <div class="prose">
+    <p>Talk and think never overwrite a token’s arrow. They add an edit to it, so nothing learned earlier is lost. One layer is these six moves:</p>
+  </div>
+  <ol class="recipe" aria-label="One decoder layer, in running order">
+    <li class="r-norm"><b>rescale</b><code>input_layernorm</code></li>
+    <li class="r-talk"><b>talk</b><code>self_attn</code></li>
+    <li class="r-add"><b>+ add</b><code>the edit</code></li>
+    <li class="r-norm"><b>rescale</b><code>post_attention_layernorm</code></li>
+    <li class="r-think"><b>think</b><code>mlp</code></li>
+    <li class="r-add"><b>+ add</b><code>the edit</code></li>
+  </ol>
+  <div class="prose">
+    <p>The printout lists the two rescale lines last, but they run first. A printout shows the parts, not the order they run in, the way Android Studio’s Layout Inspector shows a view tree.</p>
+  </div>
+
+  <div class="sub-head"><h3>28 layers</h3></div>
+  <div class="prose">
+    <p>Llama stacks 28 of these layers. They share one design, and each has its own weights, like 28 objects of one class with different field values. Drag the slider to watch the arrow for the last token, <span class="q-word">:</span>, collect its edits. This is the token that will make the guess.</p>
+  </div>
+  <figure class="stage" id="st-drift">
+    <div class="art">
+      <svg id="svg-drift" style="max-width:540px" viewBox="0 0 380 300" role="img" aria-label="The arrow for the colon starts near the middle and drifts, layer by layer, until it points at the category token Electronics."></svg>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <input class="scrub" type="range" id="scrub-drift" aria-label="Choose a layer from 0 to 28">
+    </div>
+  </figure>
+  <div class="prose">
+    <p class="small">The path is illustrative. Real layers move the arrow in all 3,072 directions at once.</p>
+    <p>I hit this wall in my catalogue project. An 8-layer network barely learned: the training signal reaching its first layer was 343 times weaker than at its last. Adding these same two ideas, the add and the rescale, took it from 25% to 50% accuracy.</p>
+  </div>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip">
+      <li><code class="c-ink">(0-27): 28 x LlamaDecoderLayer(</code><span>One layer design, 28 copies with their own weights.</span></li>
+      <li><code class="c-soft">(input_layernorm): LlamaRMSNorm((3072,), eps=1e-05)</code><span>Rescale before talking.</span></li>
+      <li><code class="c-soft">(post_attention_layernorm): LlamaRMSNorm((3072,), eps=1e-05)</code><span>Rescale before thinking.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- =============== 6 SCORE =============== -->
+<section class="ch" id="c6" aria-labelledby="h-c6">
+  <div class="ch-head">
+    <span class="eyebrow">6 · Score</span>
+    <h2 id="h-c6">Score every token, pick the best</h2>
+  </div>
+  <div class="prose">
+    <p>After layer 28 and one last rescale, the arrow for <span class="q-word">:</span> is compared with the arrow of every token in the vocabulary, all 128,256 of them. It’s the dot product again: a token whose arrow points the same way scores high.</p>
+  </div>
+  <figure class="stage" id="st-score">
+    <div class="art two">
+      <svg id="svg-score" style="max-width:440px" viewBox="0 0 380 300" role="img" aria-label="The final arrow for the colon points almost exactly at the Electronics token's arrow."></svg>
+      <svg id="svg-bars" style="max-width:380px" viewBox="0 0 330 250" role="img" aria-label="Scores, then probabilities: Electronics 62 percent, Home 9, Arts 5, Apparel 3, Office 1, all other tokens 20."></svg>
+    </div>
+    <p class="sub" aria-live="polite"></p>
+    <div class="ctrl">
+      <button class="play" type="button" aria-pressed="false">Play</button>
+      <div class="chips"><button class="chip-step" type="button">1 Compare</button><button class="chip-step" type="button">2 Pick</button></div>
+      <input class="scrub" type="range" id="scrub-score" aria-label="Scrub through the scoring scene">
+    </div>
+  </figure>
+  <div class="prose">
+    <p>It’s one more vector search, with the whole vocabulary as the collection. Llama 3.2 reuses the lookup table from chapter 2 for it, so <code>lm_head</code> adds no new numbers.</p>
+    <p>The answer comes out one token at a time. <span class="q-word">␣Electronics</span> picks the aisle. Then the whole machine runs again, with that token added to the text, to pick the shelf.</p>
+  </div>
+  <div class="inprint">
+    <span class="ip-label">In the printout</span>
+    <ul class="ip">
+      <li><code class="c-soft">(norm): LlamaRMSNorm((3072,), eps=1e-05)</code><span>The last rescale.</span></li>
+      <li><code class="c-ink">(lm_head): Linear(in_features=3072, out_features=128256, bias=False)</code><span>A score for every token, using the lookup table’s rows.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- =============== 7 DECODED =============== -->
+<section class="ch" id="c7" aria-labelledby="h-c7">
+  <div class="ch-head">
+    <span class="eyebrow">7 · The payoff</span>
+    <h2 id="h-c7">The printout, decoded</h2>
+  </div>
+  <div class="prose"><p>Here are the 26 lines again, each with what it does.</p></div>
+  <div class="stage">
+    <div class="dkey"><span><i style="background:var(--s-q)"></i>asks</span><span><i style="background:var(--s-k)"></i>gets matched</span><span><i style="background:var(--s-add)"></i>gets added</span><span><i style="background:var(--s-soft)"></i>rescales</span></div>
+    <div class="decoded">
+      <div class="drow" style="--d:0"><span class="n">1</span><code class="c-ink">LlamaForCausalLM(</code><span class="g">The whole model. Its one job: guess the next token.<a href="#c0">the idea</a></span></div>
+      <div class="drow" style="--d:1"><span class="n">2</span><code class="c-ink">(model): LlamaModel(</code><span class="g">Everything from token IDs to arrows that know their context.</span></div>
+      <div class="drow" style="--d:2"><span class="n">3</span><code class="c-ink">(embed_tokens): Embedding(128256, 3072)</code><span class="g">The lookup table: one arrow of 3,072 numbers for each token.<a href="#c2">ch. 2</a></span></div>
+      <div class="drow" style="--d:2"><span class="n">4</span><code class="c-soft">(layers): ModuleList(</code><span class="g">A list that holds the layers.</span></div>
+      <div class="drow" style="--d:3"><span class="n">5</span><code class="c-ink">(0-27): 28 x LlamaDecoderLayer(</code><span class="g">One layer design, 28 copies, each with its own weights.<a href="#c5">ch. 5</a></span></div>
+      <div class="drow" style="--d:4"><span class="n">6</span><code class="c-ink">(self_attn): LlamaAttention(</code><span class="g">Talk: each token pulls in context from earlier tokens.<a href="#c3">ch. 3</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">7</span><code class="c-q">(q_proj): Linear(in_features=3072, out_features=3072, bias=False)</code><span class="g">Makes the questions: 24 heads × 128 numbers.<a href="#c3-ask">ch. 3</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">8</span><code class="c-k">(k_proj): Linear(in_features=3072, out_features=1024, bias=False)</code><span class="g">Makes the labels: 8 shared sets × 128.<a href="#c3-heads">ch. 3</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">9</span><code class="c-add">(v_proj): Linear(in_features=3072, out_features=1024, bias=False)</code><span class="g">Makes the messages: 8 shared sets × 128.<a href="#c3-heads">ch. 3</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">10</span><code class="c-add">(o_proj): Linear(in_features=3072, out_features=3072, bias=False)</code><span class="g">Turns the blended messages into one edit.<a href="#c3-ask">ch. 3</a></span></div>
+      <div class="drow br" style="--d:4"><span class="n">11</span><code class="c-dim">)</code><span class="g"></span></div>
+      <div class="drow" style="--d:4"><span class="n">12</span><code class="c-ink">(mlp): LlamaMLP(</code><span class="g">Think: each token checks itself against 8,192 detectors.<a href="#c4">ch. 4</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">13</span><code class="c-q">(gate_proj): Linear(in_features=3072, out_features=8192, bias=False)</code><span class="g">How strongly each detector fires.<a href="#c4">ch. 4</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">14</span><code class="c-q">(up_proj): Linear(in_features=3072, out_features=8192, bias=False)</code><span class="g">How much each detector passes on.<a href="#c4">ch. 4</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">15</span><code class="c-add">(down_proj): Linear(in_features=8192, out_features=3072, bias=False)</code><span class="g">Each detector’s arrow, added back as one edit.<a href="#c4">ch. 4</a></span></div>
+      <div class="drow" style="--d:5"><span class="n">16</span><code class="c-q">(act_fn): SiLUActivation()</code><span class="g">The dimmer on the detectors.<a href="#c4">ch. 4</a></span></div>
+      <div class="drow br" style="--d:4"><span class="n">17</span><code class="c-dim">)</code><span class="g"></span></div>
+      <div class="drow" style="--d:4"><span class="n">18</span><code class="c-soft">(input_layernorm): LlamaRMSNorm((3072,), eps=1e-05)</code><span class="g">Rescale before talking. Printed last, runs first.<a href="#c5">ch. 5</a></span></div>
+      <div class="drow" style="--d:4"><span class="n">19</span><code class="c-soft">(post_attention_layernorm): LlamaRMSNorm((3072,), eps=1e-05)</code><span class="g">Rescale before thinking.<a href="#c5">ch. 5</a></span></div>
+      <div class="drow br" style="--d:3"><span class="n">20</span><code class="c-dim">)</code><span class="g"></span></div>
+      <div class="drow br" style="--d:2"><span class="n">21</span><code class="c-dim">)</code><span class="g"></span></div>
+      <div class="drow" style="--d:2"><span class="n">22</span><code class="c-soft">(norm): LlamaRMSNorm((3072,), eps=1e-05)</code><span class="g">One last rescale after layer 28.<a href="#c6">ch. 6</a></span></div>
+      <div class="drow" style="--d:2"><span class="n">23</span><code class="c-ink">(rotary_emb): LlamaRotaryEmbedding()</code><span class="g">The clock that turns questions and labels by position.<a href="#c3-order">ch. 3</a></span></div>
+      <div class="drow br" style="--d:1"><span class="n">24</span><code class="c-dim">)</code><span class="g"></span></div>
+      <div class="drow" style="--d:1"><span class="n">25</span><code class="c-ink">(lm_head): Linear(in_features=3072, out_features=128256, bias=False)</code><span class="g">A score for every token, using the lookup table’s rows.<a href="#c6">ch. 6</a></span></div>
+      <div class="drow br" style="--d:0"><span class="n">26</span><code class="c-dim">)</code><span class="g"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== 8 LORA =============== -->
+<section class="ch" id="c8" aria-labelledby="h-c8">
+  <div class="ch-head">
+    <span class="eyebrow">8 · Next</span>
+    <h2 id="h-c8">Where fine-tuning plugs in</h2>
+  </div>
+  <div class="prose">
+    <p>Training all 3.2 billion numbers needs far more memory than a free Colab GPU has. LoRA freezes every number in the printout and clips two thin strips onto some of the Linear layers. Only the strips learn.</p>
+  </div>
+  <figure class="stage" id="st-lora">
+    <div class="art two">
+      <svg id="svg-lora" style="max-width:345px" viewBox="0 0 300 290" role="img" aria-label="The q_proj weight drawn as a big grey square of 3,072 by 3,072 frozen numbers, with two thin green strips, A and B, drawn to scale."></svg>
+      <div class="panel-ctl lora-read">
+        <label for="lora-r">Strip width r <output id="lora-r-out" for="lora-r">32</output></label>
+        <input type="range" id="lora-r" min="0" max="6" step="1" value="3">
+        <span class="big" id="lora-big"></span>
+        <p id="lora-layer"></p>
+        <p id="lora-run"></p>
+      </div>
+    </div>
+    <p class="sub">Drawn to scale. Strip B starts at zero, so at step 0 the model behaves exactly like the original.</p>
+  </figure>
+  <div class="prose">
+    <p>Strips can go on the seven Linear lines: <code>q_proj</code>, <code>k_proj</code>, <code>v_proj</code>, <code>o_proj</code>, <code>gate_proj</code>, <code>up_proj</code> and <code>down_proj</code>. Rescales, the dimmer and the clock have nothing a strip can attach to. In QLoRA, the frozen square is also stored in 4 bits to save memory, while the strips train at higher precision.</p>
+  </div>
+</section>
+
+<!-- =============== CHECK =============== -->
+<section class="ch" id="check" aria-labelledby="h-check">
+  <div class="ch-head">
+    <span class="eyebrow">Check yourself</span>
+    <h2 id="h-check">Can you explain it back?</h2>
+  </div>
+  <div class="prose"><p>Say each answer out loud before you open it.</p></div>
+  <div class="quiz">
+    <details><summary>Why can’t the lookup table alone tell a phone case from a pencil case?</summary><p>Each token has one fixed row, so ␣case starts with the same arrow every time. Only attention to ␣phone or ␣pencil can move it.</p></details>
+    <details><summary>In attention, what do the gold, blue and green arrows stand for?</summary><p>Gold is the question a token asks (q_proj). Blue is the label every token shows (k_proj). Green is the message that gets added (v_proj, then o_proj).</p></details>
+    <details><summary>Why are k_proj and v_proj 1,024 wide when q_proj is 3,072?</summary><p>The 24 question heads share 8 sets of labels and messages: 8 × 128 = 1,024. It saves memory while the model writes.</p></details>
+    <details><summary>Where do most of the 3.2 billion numbers live?</summary><p>In the MLPs, the thinking step: about two thirds of the model.</p></details>
+    <details><summary>When you fine-tune with LoRA, what learns and what stays frozen?</summary><p>Only the thin strips learn. Every number in the printout stays frozen.</p></details>
+  </div>
+</section>
+
+</main>
+<footer>
+  <p>Shapes and parameter counts come from the model’s config, and token IDs from the Llama 3 tokenizer. Arrow positions, detector labels and the final probabilities are illustrations. The drawings and examples are my own, and the teaching style is a nod to <a href="https://www.3blue1brown.com/">3Blue1Brown</a>.</p>
+  <p>Written while working through week 7 of Ed Donner’s <a href="https://github.com/ed-donner/llm_engineering">LLM Engineering course</a>. Another note in the same spirit: <a href="../deep-neural-network/">But what is Ed’s deep neural network?</a></p>
+  <div class="site-foot"><span>Raghvendra Rao Koduri, 2026</span><nav aria-label="Elsewhere"><a href="../../">Home</a><a href="https://github.com/raghu619">GitHub</a><a href="https://www.linkedin.com/in/raghvendra-rao-koduri-6b339595/">LinkedIn</a></nav></div>
+</footer>
+
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const NS = 'http://www.w3.org/2000/svg';
+const RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+const nf = new Intl.NumberFormat('en-US');
+const fmt = n => nf.format(Math.round(n));
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const seg = (t, a, b) => ease((t - a) / (b - a));
+const lerp = (a, b, u) => a + (b - a) * u;
+const vadd = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const vmul = (a, k) => [a[0] * k, a[1] * k];
+const vlerp = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u)];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+const vlen = a => Math.hypot(a[0], a[1]);
+const silu = z => z / (1 + Math.exp(-z));
+const SHARED = {};
+const rad = d => d * Math.PI / 180;
+const polar = (L, deg) => [L * Math.cos(rad(deg)), L * Math.sin(rad(deg))];
+const signed = (v, dp = 1) => (v < 0 ? '−' : '') + Math.abs(v).toFixed(dp);
+function softmax(xs) { const m = Math.max(...xs); const e = xs.map(x => Math.exp(x - m)); const s = e.reduce((a, b) => a + b, 0); return e.map(x => x / s); }
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function label(parent, x, y, s, cls, anchor) {
+  const t = el('text', { x: x.toFixed(1), y: y.toFixed(1), class: cls || 'lb' }, parent);
+  if (anchor) t.setAttribute('text-anchor', anchor);
+  t.textContent = s;
+  return t;
+}
+function arrow(parent, cls, w) {
+  w = w || 2.4;
+  const g = el('g', { class: 'arr ' + (cls || 'c-ink') }, parent);
+  const line = el('line', { 'stroke-width': w, 'stroke-linecap': 'round' }, g);
+  const head = el('polygon', {}, g);
+  const hl = w * 3.7, hw = w * 2.2;
+  return {
+    g,
+    set(x1, y1, x2, y2, op) {
+      const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+      g.style.opacity = op == null ? 1 : op;
+      if (L < 1.5 || op === 0) { g.style.visibility = 'hidden'; return; }
+      g.style.visibility = 'visible';
+      const ux = dx / L, uy = dy / L, h = Math.min(hl, L * 0.6);
+      const bx = x2 - ux * h, by = y2 - uy * h;
+      line.setAttribute('x1', x1.toFixed(1)); line.setAttribute('y1', y1.toFixed(1));
+      line.setAttribute('x2', bx.toFixed(1)); line.setAttribute('y2', by.toFixed(1));
+      head.setAttribute('points', x2.toFixed(1) + ',' + y2.toFixed(1) + ' ' + (bx - uy * hw).toFixed(1) + ',' + (by + ux * hw).toFixed(1) + ' ' + (bx + uy * hw).toFixed(1) + ',' + (by - ux * hw).toFixed(1));
+    },
+    to(a, b, op) { this.set(a[0], a[1], b[0], b[1], op); }
+  };
+}
+function op(node, v) { node.style.opacity = clamp(v).toFixed(3); }
+
+/* ---------- stage controller ---------- */
+function makeStage(root, cfg) {
+  const N = cfg.steps;
+  const play = root.querySelector('.play');
+  const scrub = root.querySelector('.scrub');
+  const sub = root.querySelector('.sub');
+  const chips = Array.from(root.querySelectorAll('.chip-step'));
+  const stepMs = cfg.stepMs || 1150, holdMs = cfg.holdMs == null ? 900 : cfg.holdMs;
+  let t = N, run = 0, raf = 0;
+  scrub.min = '0'; scrub.max = String(N * 100); scrub.step = '1';
+  function caption(v) {
+    if (!sub) return;
+    if (cfg.caption) { sub.textContent = cfg.caption(v); return; }
+    const i = Math.max(0, Math.min(N, Math.ceil(v - 0.001)));
+    sub.textContent = cfg.captions[i];
+  }
+  function show(v) {
+    t = clamp(v, 0, N);
+    cfg.render(t);
+    scrub.value = String(Math.round(t * 100));
+    caption(t);
+    const i = Math.ceil(t - 0.001);
+    chips.forEach((c, k) => { c.classList.toggle('on', k + 1 === i); c.setAttribute('aria-pressed', k + 1 === i ? 'true' : 'false'); });
+  }
+  function setPlaying(on) {
+    root.classList.toggle('playing', on);
+    play.textContent = on ? 'Pause' : 'Play';
+    play.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  function stop() { run++; cancelAnimationFrame(raf); setPlaying(false); }
+  function tween(a, b, ms, id) {
+    return new Promise(res => {
+      if (RM.matches || ms <= 0) { show(b); res(); return; }
+      const t0 = performance.now();
+      const f = now => {
+        if (id !== run) { res(); return; }
+        const u = clamp((now - t0) / ms);
+        show(lerp(a, b, u));
+        if (u < 1) raf = requestAnimationFrame(f); else res();
+      };
+      raf = requestAnimationFrame(f);
+    });
+  }
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  async function playAll() {
+    const id = ++run; setPlaying(true);
+    let cur = t;
+    if (cur >= N - 0.001) { show(0); cur = 0; await wait(RM.matches ? 700 : 450); if (id !== run) return; }
+    while (cur < N - 0.001) {
+      const next = Math.min(N, Math.floor(cur + 0.001) + 1);
+      await tween(cur, next, (next - cur) * stepMs, id);
+      if (id !== run) return;
+      cur = next;
+      if (cur < N - 0.001 && (holdMs > 0 || RM.matches)) { await wait(RM.matches ? (holdMs > 0 ? Math.max(holdMs, 1200) : 160) : holdMs); if (id !== run) return; }
+    }
+    setPlaying(false);
+  }
+  async function goTo(target) {
+    const id = ++run; setPlaying(false);
+    await tween(t, target, Math.min(900, Math.abs(target - t) * 650), id);
+  }
+  play.addEventListener('click', () => { if (root.classList.contains('playing')) stop(); else playAll(); });
+  scrub.addEventListener('input', () => { stop(); show(+scrub.value / 100); });
+  chips.forEach((c, k) => c.addEventListener('click', () => goTo(k + 1)));
+  show(N);
+  setPlaying(false);
+  return { show };
+}
+
+/* ---------- shared meaning map ---------- */
+const MAP = { ox: 190, oy: 150, s: 48 };
+const PX = p => [MAP.ox + p[0] * MAP.s, MAP.oy - p[1] * MAP.s];
+const ORIGIN = [MAP.ox, MAP.oy];
+const WORDS = [
+  ['phone', [2.0, 1.45], 'r'], ['charger', [2.75, 1.0], 'r'], ['laptop', [2.55, 1.9], 'r'], ['headphones', [1.55, 2.15], 'r'],
+  ['Black', [-2.1, 1.45], 'l'], ['white', [-2.75, 0.9], 'l'], ['red', [-1.65, 2.1], 'l'],
+  ['pencil', [-2.05, -1.45], 'l'], ['notebook', [-2.6, -0.9], 'l'], ['pen', [-1.6, -2.1], 'l'],
+  ['pillow', [2.05, -1.45], 'r'], ['blanket', [2.75, -0.95], 'r'], ['sheets', [1.6, -2.1], 'r']
+];
+const WPOS = Object.fromEntries(WORDS.map(w => [w[0], w[1]]));
+const CLUSTERS = [['electronics', [2.35, 2.78]], ['colours', [-2.35, 2.78]], ['office', [-2.35, -2.88]], ['home', [2.35, -2.88]]];
+const CASE0 = [1.6, -0.1];
+function baseMap(svg, o) {
+  o = o || {};
+  const g = el('g', {}, svg);
+  for (let u = -3; u <= 3; u++) { const x = PX([u, 0])[0]; el('line', { x1: x, x2: x, y1: 6, y2: 294, class: 'grid' }, g); }
+  for (let v = -2; v <= 2; v++) { const y = PX([0, v])[1]; el('line', { x1: 6, x2: 374, y1: y, y2: y, class: 'grid' }, g); }
+  el('line', { x1: 6, x2: 374, y1: MAP.oy, y2: MAP.oy, class: 'axis' }, g);
+  el('line', { x1: MAP.ox, x2: MAP.ox, y1: 6, y2: 294, class: 'axis' }, g);
+  const words = {};
+  if (o.dots !== false) for (const [w, p, side] of WORDS) {
+    const [x, y] = PX(p);
+    const d = el('circle', { cx: x, cy: y, r: 3.4, class: o.faint ? 'dot faint' : 'dot' }, g);
+    let t = null;
+    if (o.labels !== false) t = label(g, side === 'r' ? x + 7 : x - 7, y + 4, w, (o.hi || []).includes(w) ? 'wl hi' : 'wl', side === 'r' ? 'start' : 'end');
+    words[w] = { d, t };
+  }
+  const clusters = [];
+  if (o.clusters !== false) for (const [n, p] of CLUSTERS) { const [x, y] = PX(p); clusters.push(label(g, x, y + 4, n.toUpperCase(), 'cl', 'middle')); }
+  el('circle', { cx: MAP.ox, cy: MAP.oy, r: 2.6, class: 'origin' }, g);
+  return { g, words, clusters };
+}
+
+/* ---------- 1. chop ---------- */
+(() => {
+  const line = $('#chop');
+  makeStage($('#st-chop'), {
+    steps: 2, stepMs: 1000,
+    captions: [
+      'The text, as typed.',
+      'Cut into 7 tokens. ␣ marks a space: it belongs to the word after it.',
+      'Each token becomes its ID: its row number in the vocabulary.'
+    ],
+    render(t) {
+      line.style.setProperty('--split', seg(t, 0, 1).toFixed(3));
+      line.style.setProperty('--ids', seg(t, 1, 2).toFixed(3));
+    }
+  });
+})();
+
+/* ---------- try your own ---------- */
+(() => {
+  const PRESETS = {"Black phone case": [["Black", 14755], [" phone", 4641], [" case", 1162]], "Mangobuttermilch 500 ml": [["M", 44], ["ang", 526], ["ob", 677], ["ut", 332], ["term", 5098], ["il", 321], ["ch", 331], [" ", 220], ["500", 2636], [" ml", 16116]], "Slim Fit Jeans": [["Slim", 88308], [" Fit", 30990], [" Jeans", 82507]], "Polaroid instant camera": [["P", 47], ["olar", 7569], ["oid", 590], [" instant", 9888], [" camera", 6382]], "Leather phone case": [["Le", 2356], ["ather", 1894], [" phone", 4641], [" case", 1162]]};
+  const TOK_URL = 'https://cdn.jsdelivr.net/npm/llama3-tokenizer-js@1.2.0/bundle/llama3-tokenizer-with-baked-data.js';
+  const input = $('#try-in'), out = $('#try-out'), status = $('#try-status'), presets = $('#presets');
+  let tok = null, loading = null, failed = false, timer = 0;
+  function pieceNode(piece) {
+    const b = document.createElement('b');
+    const m = piece.match(/^( +)(.*)$/s);
+    if (m) {
+      const sp = document.createElement('span'); sp.className = 'sp'; sp.textContent = '␣'.repeat(m[1].length);
+      b.appendChild(sp); b.appendChild(document.createTextNode(m[2].replace(/\n/g, '↵')));
+    } else b.textContent = piece.replace(/\n/g, '↵');
+    return b;
+  }
+  function draw(pairs) {
+    out.textContent = '';
+    for (const [piece, id] of pairs) {
+      const s = document.createElement('span'); s.className = 'ttok';
+      s.appendChild(pieceNode(piece));
+      const i = document.createElement('i'); i.textContent = String(id); s.appendChild(i);
+      out.appendChild(s);
+    }
+    const c = document.createElement('span'); c.className = 'try-count';
+    c.textContent = pairs.length === 1 ? '1 token' : pairs.length + ' tokens';
+    out.appendChild(c);
+  }
+  function load() {
+    if (tok || failed) return Promise.resolve(tok);
+    if (!loading) {
+      status.textContent = 'Loading the Llama 3 tokenizer…';
+      loading = import(TOK_URL).then(m => {
+        tok = m.default;
+        status.textContent = 'The real Llama 3 tokenizer is loaded. Type anything.';
+        return tok;
+      }).catch(() => {
+        failed = true;
+        status.textContent = 'The tokenizer couldn’t load here, so only the example buttons work.';
+        return null;
+      });
+    }
+    return loading;
+  }
+  function update() {
+    const v = input.value;
+    if (PRESETS[v]) { draw(PRESETS[v]); return; }
+    if (!v.trim()) { out.textContent = ''; return; }
+    if (tok) {
+      try {
+        const ids = tok.encode(v, { bos: false, eos: false });
+        draw(ids.map(id => [tok.decode([id], { bos: false, eos: false }), id]));
+      } catch (e) { status.textContent = 'That text couldn’t be tokenized here.'; }
+      return;
+    }
+    if (failed) { out.textContent = ''; return; }
+    load().then(t => { if (t) update(); else out.textContent = ''; });
+  }
+  Object.keys(PRESETS).forEach(k => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = k;
+    b.addEventListener('click', () => { input.value = k; update(); });
+    presets.appendChild(b);
+  });
+  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(update, 140); });
+  update();
+})();
+
+/* ---------- 2. look up ---------- */
+(() => {
+  const tbl = $('#svg-table');
+  label(tbl, 12, 13, '128,256 ROWS × 3,072 NUMBERS', 'lab');
+  el('rect', { x: 8, y: 22, width: 214, height: 272, rx: 6, class: 'panelbg' }, tbl);
+  const rows = [['0', '!'], ['1', '"'], ['2', '#'], null, ['1162', '␣case', 1], null, ['4641', '␣phone', 1], null, ['14755', 'Black', 1], null, ['128000', '<|begin_of…'], ['128255', '<|reserved…']];
+  let y = 30;
+  const hl = [];
+  let seed = 7;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  for (const r of rows) {
+    if (!r) { label(tbl, 115, y + 12, '⋮', 'mn soft', 'middle'); y += 18; continue; }
+    const bg = el('rect', { x: 12, y: y, width: 206, height: 20, rx: 3, class: 'f-ink' }, tbl);
+    bg.style.opacity = 0;
+    label(tbl, 18, y + 14, r[0], 'mn soft');
+    const tx = label(tbl, 70, y + 14, r[1], 'mn');
+    for (let i = 0; i < 8; i++) {
+      const h = 3 + rnd() * 11;
+      el('rect', { x: 176 + i * 5, y: y + 10 - h / 2, width: 3, height: h, rx: 1, class: r[2] ? 'f-soft' : 'f-dim' }, tbl);
+    }
+    if (r[2]) hl.push({ bg, tx });
+    y += 23;
+  }
+  const svg = $('#svg-look');
+  const m = baseMap(svg, { hi: ['Black', 'phone'] });
+  const arrows = {
+    Black: arrow(svg, 'c-ink', 2.4), phone: arrow(svg, 'c-ink', 2.4), case: arrow(svg, 'c-ink', 2.4)
+  };
+  const caseP = PX(CASE0);
+  const caseDot = el('circle', { cx: caseP[0], cy: caseP[1], r: 3.4, class: 'dot' }, svg);
+  const caseLb = label(svg, caseP[0] + 6, caseP[1] + 17, 'case', 'wl hi');
+  makeStage($('#st-look'), {
+    steps: 3, stepMs: 1100,
+    captions: [
+      'The lookup table, one row per token.',
+      'Find the rows for our tokens.',
+      'Each row becomes an arrow. We can draw only 2 of its 3,072 directions.',
+      'Training put related tokens in similar directions. ␣case sits on its own.'
+    ],
+    render(t) {
+      const p1 = seg(t, 0, 1), p2 = seg(t, 1, 2), p3 = seg(t, 2, 3);
+      hl.forEach(h => { h.bg.style.opacity = (0.16 * p1).toFixed(3); h.tx.classList.toggle('on', p1 > 0.5); });
+      for (const w of ['Black', 'phone']) {
+        const P = PX(WPOS[w]);
+        arrows[w].to(ORIGIN, vlerp(ORIGIN, P, p2), p2 > 0 ? 1 : 0);
+        op(m.words[w].t, p2); op(m.words[w].d, p2);
+      }
+      arrows.case.to(ORIGIN, vlerp(ORIGIN, caseP, p2), p2 > 0 ? 1 : 0);
+      op(caseLb, p2); op(caseDot, p2);
+      for (const [w] of WORDS) if (w !== 'Black' && w !== 'phone') { op(m.words[w].d, p3); op(m.words[w].t, p3); }
+      m.clusters.forEach(c => op(c, p3));
+    }
+  });
+})();
+
+/* ---------- 3a. the problem ---------- */
+(() => {
+  const svg = $('#svg-problem');
+  baseMap(svg, { labels: false, dots: false });
+  const c = PX(CASE0);
+  arrow(svg, 'c-ink', 2.6).to(ORIGIN, c);
+  label(svg, c[0] + 4, c[1] + 18, 'case', 'wl hi');
+  const targets = [
+    ['phone case?', [2.3, 1.3], 0, -10],
+    ['pillow case?', [2.2, -1.35], 0, 20],
+    ['pencil case?', [-2.1, -1.25], 0, 20]
+  ];
+  for (const [txt, p, dx, dy] of targets) {
+    const P = PX(p);
+    arrow(svg, 'c-soft dash', 1.6).to(c, P);
+    label(svg, P[0] + dx, P[1] + dy, txt, 'lb', 'middle');
+  }
+})();
+
+/* ---------- 3b. attention ---------- */
+(() => {
+  const asker = $('#asker'), later = $$('#st-attn .trt.later'), note = $('#later-note');
+  const qk = $('#svg-qk');
+  const O = [56, 118], S = 50;
+  const toPx = v => [O[0] + v[0] * S, O[1] - v[1] * S];
+  const q = polar(1.5, 30);
+  const KEYS = [
+    { w: 'phone', k: polar(2.1, 18), v: [0.55, 1.05] },
+    { w: 'Black', k: polar(2.0, 95), v: [-0.8, 0.5] },
+    { w: 'case', k: polar(2.0, -50), v: [0.05, -0.1] }
+  ];
+  KEYS.forEach(o => { o.score = dot(q, o.k); });
+  const shares = softmax(KEYS.map(o => o.score));
+  KEYS.forEach((o, i) => { o.share = shares[i]; });
+  label(qk, 308, 14, 'QUESTION VS LABELS', 'lab', 'end');
+  const qhat = vmul(q, 1 / vlen(q));
+  const guide = el('line', { class: 'guide', x1: O[0], y1: O[1], x2: toPx(vmul(qhat, 2.45))[0], y2: toPx(vmul(qhat, 2.45))[1] }, qk);
+  const drops = KEYS.map(o => {
+    const foot = vmul(qhat, dot(o.k, qhat));
+    const a = toPx(o.k), b = toPx(foot);
+    return el('line', { class: 'guide', x1: a[0], y1: a[1], x2: b[0], y2: b[1] }, qk);
+  });
+  el('circle', { cx: O[0], cy: O[1], r: 2.6, class: 'origin' }, qk);
+  KEYS.forEach(o => { o.arr = arrow(qk, 'c-k', 2.4); });
+  const qArr = arrow(qk, 'c-q', 2.8);
+  const qTip = toPx(q);
+  const qLb = label(qk, qTip[0] - 8, qTip[1] - 9, 'q', 'var tq', 'end');
+  const kOff = { phone: [9, 5], Black: [9, 5], case: [9, 6] };
+  KEYS.forEach(o => { const p = toPx(o.k); o.lb = label(qk, p[0] + kOff[o.w][0], p[1] + kOff[o.w][1], 'k · ' + o.w, 'lb tk'); });
+  const hScore = label(qk, 12, 236, 'MATCH SCORE (DOT PRODUCT)', 'lab');
+  const hShare = label(qk, 12, 236, 'SHARE OF ATTENTION (SOFTMAX)', 'lab');
+  const BX = 70;
+  KEYS.forEach((o, i) => {
+    const y = 258 + i * 28;
+    o.by = y;
+    label(qk, 12, y + 4, o.w, 'mn');
+    o.bar = el('rect', { x: BX, y: y - 8, height: 13, rx: 2, width: 0, class: 'f-soft' }, qk);
+    o.val = label(qk, BX, y + 4, '', 'mn');
+  });
+  const att = $('#svg-att');
+  const m = baseMap(att, { hi: ['Black', 'phone'] });
+  const ghost = arrow(att, 'c-dim dash', 2);
+  const msgArrows = KEYS.map(() => arrow(att, 'c-add', 1.8));
+  const sumArr = arrow(att, 'c-add', 2.8);
+  const caseArr = arrow(att, 'c-ink', 2.6);
+  const caseLb = label(att, 0, 0, 'case', 'wl hi');
+  let NEW = CASE0;
+  KEYS.forEach(o => { NEW = vadd(NEW, vmul(o.v, o.share)); });
+  SHARED.caseAtt = NEW;
+  makeStage($('#st-attn'), {
+    steps: 4, stepMs: 1250, holdMs: 1100,
+    captions: [
+      'Press play to watch ␣case pull in context from the tokens before it.',
+      'Ask. ␣case makes a question (gold). Every token so far shows a label (blue). Tokens after it are hidden.',
+      'Match. Each label is scored against the question with a dot product. ␣phone points almost the same way, so it scores highest.',
+      'Share. Softmax turns the scores into shares that add up to 100%.',
+      'Add. Each token sends a message (green), scaled by its share. Added up, they move ␣case toward electronics.'
+    ],
+    render(t) {
+      const p1 = seg(t, 0, 1), p2 = seg(t, 1, 2), p3 = seg(t, 2, 3);
+      asker.style.setProperty('--on', p1.toFixed(3));
+      later.forEach(e => { e.style.opacity = lerp(1, 0.3, p1).toFixed(3); });
+      op(note, p1);
+      qArr.to(toPx([0, 0]), toPx(vmul(q, p1)), p1 > 0 ? 1 : 0); op(qLb, p1);
+      KEYS.forEach(o => { o.arr.to(toPx([0, 0]), toPx(vmul(o.k, p1)), p1 > 0 ? 1 : 0); op(o.lb, p1); });
+      op(guide, p2 * (1 - 0.55 * p3)); drops.forEach(d => op(d, p2 * (1 - 0.55 * p3)));
+      op(hScore, p2 * (1 - p3)); op(hShare, p3);
+      KEYS.forEach(o => {
+        const ws = o.score / 3.2 * 190, wsh = o.share * 220;
+        const w = lerp(ws * p2, wsh, p3);
+        o.bar.setAttribute('width', Math.max(0, w).toFixed(1));
+        o.bar.setAttribute('class', p3 > 0.5 ? 'f-ink' : 'f-soft');
+        o.val.setAttribute('x', (BX + w + 6).toFixed(1));
+        o.val.textContent = p3 > 0.5 ? Math.round(o.share * 100) + '%' : o.score.toFixed(2);
+        op(o.val, p3 > 0.5 ? p3 : p2);
+      });
+      let tip = CASE0;
+      KEYS.forEach((o, i) => {
+        const u = seg(t, 3 + i * 0.15, 3.15 + i * 0.15);
+        const end = vadd(tip, vmul(o.v, o.share * u));
+        msgArrows[i].to(PX(tip), PX(end), u > 0 ? 1 : 0);
+        tip = vadd(tip, vmul(o.v, o.share));
+      });
+      const u2 = seg(t, 3.45, 3.75), u3 = seg(t, 3.75, 4);
+      sumArr.to(PX(CASE0), PX(vlerp(CASE0, NEW, u2)), u2 > 0 ? 1 : 0);
+      ghost.to(ORIGIN, PX(CASE0), u3 > 0 ? 0.7 * u3 : 0);
+      const cur = vlerp(CASE0, NEW, u3), cp = PX(cur);
+      caseArr.to(ORIGIN, cp);
+      if (u3 > 0.5) { caseLb.setAttribute('x', (cp[0] - 6).toFixed(1)); caseLb.setAttribute('y', (cp[1] - 10).toFixed(1)); caseLb.setAttribute('text-anchor', 'end'); caseLb.textContent = 'case, after talking'; }
+      else { caseLb.setAttribute('x', (cp[0] + 6).toFixed(1)); caseLb.setAttribute('y', (cp[1] + 18).toFixed(1)); caseLb.setAttribute('text-anchor', 'start'); caseLb.textContent = 'case'; }
+    }
+  });
+})();
+
+/* ---------- 3c. heads ---------- */
+(() => {
+  const svg = $('#svg-heads');
+  const xs = Array.from({ length: 24 }, (_, i) => 26 + i * 14);
+  const gx = i => xs[Math.floor(i / 3) * 3 + 1];
+  const top = label(svg, 190, 18, '24 QUESTION HEADS', 'lab', 'middle');
+  const lines = xs.map(() => el('line', { stroke: 'currentColor', class: 'c-dim', 'stroke-width': 1.2 }, svg));
+  const dots = xs.map(x => el('circle', { cx: x, cy: 40, r: 4.6, class: 'f-q' }, svg));
+  const kb = xs.map(() => el('rect', { y: 112, height: 15, rx: 2, class: 'f-k' }, svg));
+  const vb = xs.map(() => el('rect', { y: 128, height: 15, rx: 2, class: 'f-add' }, svg));
+  const tA = label(svg, 190, 170, '24 SETS OF LABELS AND MESSAGES', 'lab', 'middle');
+  const tB = label(svg, 190, 170, '8 SHARED SETS, ONE PER GROUP OF 3', 'lab', 'middle');
+  const lg = el('g', {}, svg);
+  el('rect', { x: 92, y: 190, width: 11, height: 11, rx: 2, class: 'f-k' }, lg); label(lg, 109, 200, 'label (k_proj)', 'lb soft');
+  el('rect', { x: 206, y: 190, width: 11, height: 11, rx: 2, class: 'f-add' }, lg); label(lg, 223, 200, 'message (v_proj)', 'lb soft');
+  makeStage($('#st-heads'), {
+    steps: 2, stepMs: 1300, holdMs: 1000,
+    captions: [
+      'Press play: first the classic design, then Llama’s.',
+      'Classic attention: every question head has its own labels and messages. 24 sets.',
+      'Llama 3.2: each group of 3 question heads shares one set. 8 sets, a third of the memory.'
+    ],
+    render(t) {
+      const p1 = seg(t, 0, 1), p2 = seg(t, 1, 2);
+      op(top, p1); op(lg, p1);
+      xs.forEach((x, i) => {
+        const cx = lerp(x, gx(i), p2), w = lerp(10, 34, p2);
+        op(dots[i], p1);
+        kb[i].setAttribute('x', (cx - w / 2).toFixed(1)); kb[i].setAttribute('width', w.toFixed(1)); op(kb[i], p1);
+        vb[i].setAttribute('x', (cx - w / 2).toFixed(1)); vb[i].setAttribute('width', w.toFixed(1)); op(vb[i], p1);
+        lines[i].setAttribute('x1', x); lines[i].setAttribute('y1', 45); lines[i].setAttribute('x2', cx.toFixed(1)); lines[i].setAttribute('y2', 111);
+        op(lines[i], p1);
+      });
+      op(tA, p1 * (1 - p2)); op(tB, p2);
+    }
+  });
+})();
+
+/* ---------- 3d. clock ---------- */
+(() => {
+  const svg = $('#svg-clock');
+  const C = [150, 150], R = 112, STEP = 20;
+  el('circle', { cx: C[0], cy: C[1], r: R, class: 'ring' }, svg);
+  for (let p = 0; p < 18; p++) {
+    const a = rad(-90 + p * STEP);
+    const x1 = C[0] + Math.cos(a) * (R - 5), y1 = C[1] + Math.sin(a) * (R - 5), x2 = C[0] + Math.cos(a) * (R + 3), y2 = C[1] + Math.sin(a) * (R + 3);
+    el('line', { x1, y1, x2, y2, stroke: 'currentColor', class: 'c-soft', 'stroke-width': 1.4 }, svg);
+    label(svg, C[0] + Math.cos(a) * (R + 15), C[1] + Math.sin(a) * (R + 15) + 3.5, String(p), 'mn dim', 'middle');
+  }
+  const arc = el('path', { fill: 'none', stroke: 'currentColor', class: 'c-soft', 'stroke-width': 1.5, 'stroke-dasharray': '3 3' }, svg);
+  const arcLb = label(svg, 0, 0, '', 'mn', 'middle');
+  const kHand = arrow(svg, 'c-k', 3);
+  const qHand = arrow(svg, 'c-q', 3);
+  el('circle', { cx: C[0], cy: C[1], r: 4, class: 'f-soft' }, svg);
+  const qLb = label(svg, 0, 0, 'q', 'var tq', 'middle');
+  const kLb = label(svg, 0, 0, 'k', 'var tk', 'middle');
+  const gap = $('#clk-gap'), gapOut = $('#clk-gap-out'), move = $('#clk-move'), read = $('#clk-read');
+  let m = 3;
+  function hand(pos, L) { const a = rad(-90 + pos * STEP); return [C[0] + Math.cos(a) * L, C[1] + Math.sin(a) * L]; }
+  function draw() {
+    const d = +gap.value;
+    if (m < d) m = d;
+    const n = m - d;
+    gapOut.textContent = String(d);
+    qHand.to(C, hand(m, 92)); kHand.to(C, hand(n, 76));
+    const ql = hand(m, 101), kl = hand(n, 85);
+    qLb.setAttribute('x', ql[0].toFixed(1)); qLb.setAttribute('y', (ql[1] + 5).toFixed(1));
+    kLb.setAttribute('x', kl[0].toFixed(1)); kLb.setAttribute('y', (kl[1] + 5).toFixed(1));
+    if (d === 0) { arc.setAttribute('d', ''); arcLb.textContent = ''; }
+    else {
+      const r = 40, a0 = rad(-90 + n * STEP), a1 = rad(-90 + m * STEP);
+      const s = [C[0] + Math.cos(a0) * r, C[1] + Math.sin(a0) * r], e = [C[0] + Math.cos(a1) * r, C[1] + Math.sin(a1) * r];
+      arc.setAttribute('d', 'M' + s[0].toFixed(1) + ',' + s[1].toFixed(1) + ' A' + r + ',' + r + ' 0 ' + (d * STEP > 180 ? 1 : 0) + ' 1 ' + e[0].toFixed(1) + ',' + e[1].toFixed(1));
+      const am = rad(-90 + (n + d / 2) * STEP);
+      arcLb.setAttribute('x', (C[0] + Math.cos(am) * 56).toFixed(1)); arcLb.setAttribute('y', (C[1] + Math.sin(am) * 56 + 4).toFixed(1));
+      arcLb.textContent = d * STEP + '°';
+    }
+    const left = Math.round(Math.cos(rad(d * STEP)) * 100);
+    read.textContent = 'Question at position ' + m + ', label at position ' + n + '. ' + d + (d === 1 ? ' position' : ' positions') + ' apart, so the hands are ' + d * STEP + '° apart. Match left after turning: ' + (left < 0 ? '−' + Math.abs(left) : left) + '%.';
+  }
+  gap.addEventListener('input', draw);
+  move.addEventListener('click', () => { m += 1; if (m > 17) m = +gap.value; draw(); });
+  draw();
+})();
+
+/* ---------- 4. think ---------- */
+(() => {
+  const det = $('#svg-det');
+  const DET = [
+    ['phone accessory?', 2.6, [0.11, 0.15]], ['electronics?', 1.9, [0.11, 0.06]], ['carried around?', 0.7, [0.05, 0.04]], ['a colour?', 0.4, [-0.12, 0.05]],
+    ['stationery?', -1.4, [-0.10, -0.12]], ['bedding?', -1.8, [0.05, -0.12]], ['a size or number?', -2.2, [0.0, -0.08]], ['food or drink?', -2.6, [0.04, -0.06]]
+  ];
+  const Z = 236, SC = 26;
+  label(det, 12, 16, '8 OF THE 8,192 DETECTORS', 'lab');
+  el('line', { x1: Z, x2: Z, y1: 28, y2: 280, stroke: 'currentColor', class: 'c-dim', 'stroke-width': 1 }, det);
+  const rows = DET.map((d, i) => {
+    const y = 46 + i * 31;
+    const bulbBg = el('circle', { cx: 20, cy: y - 4, r: 7.5, class: 'panelbg' }, det);
+    const bulb = el('circle', { cx: 20, cy: y - 4, r: 7.5, class: 'f-q' }, det);
+    label(det, 36, y, d[0], 'lb');
+    const bar = el('rect', { y: y - 11, height: 12, rx: 2, class: 'f-soft' }, det);
+    const val = label(det, 0, y, '', 'mn');
+    return { d, y, bulb, bar, val, s: silu(d[1]) };
+  });
+  const svg = $('#svg-mlp');
+  baseMap(svg, { labels: false });
+  const START = SHARED.caseAtt || [1.94, 0.81];
+  const parts = [[rows[0]], [rows[1]], rows.slice(2)];
+  const contrib = parts.map(group => group.reduce((acc, r) => vadd(acc, vmul(r.d[2], r.s)), [0, 0]));
+  const END = contrib.reduce((a, c) => vadd(a, c), START);
+  const ghost = arrow(svg, 'c-dim dash', 2);
+  const wArr = contrib.map((_, i) => arrow(svg, 'c-add', i === 2 ? 1.4 : 1.9));
+  const sumArr = arrow(svg, 'c-add', 2.8);
+  const caseArr = arrow(svg, 'c-ink', 2.6);
+  const caseLb = label(svg, 0, 0, '', 'wl hi');
+  makeStage($('#st-mlp'), {
+    steps: 3, stepMs: 1200, holdMs: 1100,
+    captions: [
+      'Press play to run ␣case through the detectors.',
+      'Check. Each detector scores how well the arrow lines up with its own direction (gate_proj).',
+      'Dim. A dimmer passes strong positive scores and fades the rest to about zero (SiLU). Three detectors light up.',
+      'Add. The lit detectors add their arrows (down_proj). ␣case now sits among the electronics.'
+    ],
+    render(t) {
+      const p1 = seg(t, 0, 1), p2 = seg(t, 1, 2);
+      rows.forEach(r => {
+        const v = lerp(r.d[1], r.s, p2) * p1;
+        const x = v >= 0 ? Z : Z + v * SC, w = Math.abs(v) * SC;
+        r.bar.setAttribute('x', x.toFixed(1)); r.bar.setAttribute('width', w.toFixed(1));
+        r.bar.setAttribute('class', p2 > 0.5 ? (r.s > 0.3 ? 'f-q' : 'f-dim') : 'f-soft');
+        r.val.textContent = signed(p2 > 0.5 ? r.s : r.d[1]);
+        if (v >= 0) { r.val.setAttribute('x', (Z + w + 5).toFixed(1)); r.val.setAttribute('text-anchor', 'start'); }
+        else { r.val.setAttribute('x', (Z - w - 5).toFixed(1)); r.val.setAttribute('text-anchor', 'end'); }
+        op(r.val, p1);
+        r.bulb.style.opacity = (clamp(r.s / 2.4) * p2).toFixed(3);
+      });
+      let tip = START;
+      contrib.forEach((c, i) => {
+        const u = seg(t, 2 + i * 0.15, 2.15 + i * 0.15);
+        wArr[i].to(PX(tip), PX(vadd(tip, vmul(c, u))), u > 0 ? 1 : 0);
+        tip = vadd(tip, c);
+      });
+      const u2 = seg(t, 2.45, 2.75), u3 = seg(t, 2.75, 3);
+      sumArr.to(PX(START), PX(vlerp(START, END, u2)), u2 > 0 ? 1 : 0);
+      ghost.to(ORIGIN, PX(START), u3 > 0 ? 0.7 * u3 : 0);
+      const cp = PX(vlerp(START, END, u3));
+      caseArr.to(ORIGIN, cp);
+      caseLb.textContent = u3 > 0.5 ? 'case, after thinking' : 'case, after talking';
+      caseLb.setAttribute('x', (cp[0] - 12).toFixed(1)); caseLb.setAttribute('y', (cp[1] - 12).toFixed(1));
+      caseLb.setAttribute('text-anchor', 'end');
+    }
+  });
+})();
+
+/* ---------- 5a. rescale ---------- */
+(() => {
+  const svg = $('#svg-norm');
+  const C = [150, 130], S = 44, R = 1.6;
+  el('circle', { cx: C[0], cy: C[1], r: R * S, class: 'ring' }, svg);
+  el('circle', { cx: C[0], cy: C[1], r: 2.6, class: 'origin' }, svg);
+  const LIST = [[18, 0.55], [72, 1.75], [138, 1.1], [196, 2.4], [248, 0.75], [306, 2.05], [346, 1.35]];
+  const items = LIST.map(([deg, L]) => ({ deg, L, ghost: arrow(svg, 'c-dim dash', 1.6), a: arrow(svg, 'c-ink', 2.4) }));
+  const tag = label(svg, C[0], 252, 'SAME LENGTH, SAME DIRECTIONS', 'lab', 'middle');
+  const toPx = v => [C[0] + v[0] * S, C[1] - v[1] * S];
+  makeStage($('#st-norm'), {
+    steps: 2, stepMs: 1100, holdMs: 900,
+    captions: ['Press play.', 'After a few edits, the arrows have very different lengths.', 'Rescaled: every arrow gets the same length and keeps its direction.'],
+    render(t) {
+      const p1 = seg(t, 0, 1), p2 = seg(t, 1, 2);
+      items.forEach(it => {
+        const raw = polar(it.L * p1, it.deg), fin = polar(R, it.deg);
+        it.a.to(C, toPx(vlerp(raw, fin, p2)), p1 > 0 ? 1 : 0);
+        it.ghost.to(C, toPx(polar(it.L, it.deg)), p2 > 0 ? 0.6 * p2 : 0);
+      });
+      op(tag, p2);
+    }
+  });
+})();
+
+/* ---------- 5b. 28 layers ---------- */
+const CATS = [
+  [' Electronics', [3.0, 1.55], 'end', 0, -11],
+  [' Home', [3.0, -1.55], 'end', 0, 20],
+  [' Arts', [0.25, 2.9], 'start', 9, 4],
+  [' Apparel', [-3.0, 1.55], 'start', 0, -11],
+  [' Office', [-3.0, -1.55], 'start', 0, 20]
+];
+function drawCats(svg, withArrows) {
+  return CATS.map(([name, p, anchor, dx, dy]) => {
+    const P = PX(p);
+    const a = withArrows ? arrow(svg, 'c-soft', 1.8) : null;
+    const g = el('g', {}, svg);
+    if (!withArrows) el('rect', { x: P[0] - 4, y: P[1] - 4, width: 8, height: 8, transform: 'rotate(45 ' + P[0] + ' ' + P[1] + ')', class: 'f-soft' }, g);
+    const lb = label(g, P[0] + dx, P[1] + dy, '‘' + name.replace(' ', '␣') + '’', 'lb', anchor);
+    return { name, p, P, a, g, lb };
+  });
+}
+(() => {
+  const svg = $('#svg-drift');
+  baseMap(svg, { labels: false, clusters: false, faint: true });
+  drawCats(svg, false);
+  const CP = [[-0.35, -0.95], [-0.15, -0.8], [0.35, -0.5], [0.95, -0.1], [1.6, 0.4], [2.2, 0.85], [2.6, 1.2], [2.8, 1.45]];
+  const cr = (p0, p1, p2, p3, u) => [0, 1].map(k => 0.5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * u + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * u * u + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * u * u * u));
+  const PTS = [];
+  for (let k = 0; k <= 28; k++) {
+    const j = Math.min(6, Math.floor(k / 4)), u = (k - j * 4) / 4;
+    const p = cr(CP[Math.max(0, j - 1)], CP[j], CP[j + 1], CP[Math.min(7, j + 2)], u);
+    const wob = (k === 0 || k === 28) ? [0, 0] : [0.05 * Math.sin(k * 1.9), 0.05 * Math.cos(k * 1.3)];
+    PTS.push(vadd(p, wob));
+  }
+  SHARED.colonEnd = PTS[28];
+  const trail = el('polyline', { fill: 'none', stroke: 'currentColor', class: 'c-soft', 'stroke-width': 1.3, 'stroke-dasharray': '2 3' }, svg);
+  const marks = PTS.map(p => { const P = PX(p); const c = el('circle', { cx: P[0], cy: P[1], r: 1.8, class: 'f-soft' }, svg); return c; });
+  const edit = arrow(svg, 'c-add', 2.2);
+  const main = arrow(svg, 'c-ink', 2.6);
+  const lb = label(svg, 0, 0, '‘:’', 'wl hi');
+  const at = t => { const k = Math.floor(t), f = t - k; return k >= 28 ? PTS[28] : vlerp(PTS[k], PTS[k + 1], f); };
+  function nearest(p) {
+    const L = vlen(p); if (L < 1.5) return null;
+    let best = null, bc = 0.9;
+    for (const c of CATS) { const cs = dot(p, c[1]) / (L * vlen(c[1])); if (cs > bc) { bc = cs; best = c[0]; } }
+    return best;
+  }
+  makeStage($('#st-drift'), {
+    steps: 28, stepMs: 230, holdMs: 0,
+    caption(t) {
+      const k = Math.round(t);
+      if (k === 0) return 'Layer 0: the arrow for ‘:’ is still just its row from the table.';
+      const nb = nearest(at(t));
+      return 'Layer ' + k + ' of 28: ' + (nb ? '‘:’ now points closest to ‘' + nb.replace(' ', '␣') + '’.' : 'not close to any category token yet.');
+    },
+    render(t) {
+      const k = Math.floor(t);
+      const pts = PTS.slice(0, k + 1).concat([at(t)]).map(PX);
+      trail.setAttribute('points', pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '));
+      marks.forEach((c, i) => op(c, i <= t ? 1 : 0));
+      const cur = at(t), cp = PX(cur);
+      main.to(ORIGIN, cp);
+      const prevK = Math.max(0, Math.ceil(t - 0.001) - 1);
+      if (t > 0.02) edit.to(PX(PTS[prevK]), cp, 1); else edit.set(0, 0, 0, 0, 0);
+      lb.setAttribute('x', (cp[0] + 8).toFixed(1)); lb.setAttribute('y', (cp[1] + 16).toFixed(1));
+    }
+  });
+})();
+
+/* ---------- 6. score ---------- */
+(() => {
+  const svg = $('#svg-score');
+  baseMap(svg, { labels: false, clusters: false, faint: true });
+  const cats = drawCats(svg, true);
+  const F = SHARED.colonEnd || [2.8, 1.45];
+  const fin = arrow(svg, 'c-ink', 3);
+  label(svg, PX(F)[0] + 8, PX(F)[1] + 16, '‘:’', 'wl hi');
+  const bars = $('#svg-bars');
+  const PROB = [0.62, 0.09, 0.05, 0.03, 0.01];
+  const hS = label(bars, 12, 16, 'DOT-PRODUCT SCORE', 'lab');
+  const hP = label(bars, 12, 16, 'PROBABILITY', 'lab');
+  const Z = 212, SS = 7.5, PB = 118, PS = 200;
+  const zl = el('line', { x1: Z, x2: Z, y1: 30, y2: 196, stroke: 'currentColor', class: 'c-dim', 'stroke-width': 1 }, bars);
+  const rows = cats.map((c, i) => {
+    const y = 46 + i * 32;
+    label(bars, 12, y + 4, '‘' + c.name.replace(' ', '␣') + '’', 'mn');
+    const r = el('rect', { y: y - 8, height: 13, rx: 2, class: 'f-soft' }, bars);
+    const v = label(bars, 0, y + 4, '', 'mn');
+    return { c, y, r, v, score: dot(F, c.p), prob: PROB[i] };
+  });
+  const oy = 46 + 5 * 32;
+  const oLb = label(bars, 12, oy + 4, '128,251 others', 'mn soft');
+  const oR = el('rect', { x: PB, y: oy - 8, height: 13, rx: 2, width: 0.2 * PS, class: 'f-dim' }, bars);
+  const oV = label(bars, PB + 0.2 * PS + 6, oy + 4, '20%', 'mn soft');
+  makeStage($('#st-score'), {
+    steps: 2, stepMs: 1200, holdMs: 1100,
+    captions: [
+      'Press play to score the arrow for ‘:’.',
+      'Compare. The arrow for ‘:’ gets a dot-product score against every token’s arrow. Same direction, high score.',
+      'Pick. Softmax turns all 128,256 scores into probabilities. ␣Electronics wins, so it’s the next token. Illustrative numbers.'
+    ],
+    render(t) {
+      const p1 = seg(t, 0, 1), p2 = seg(t, 1, 2);
+      cats.forEach((c, i) => {
+        c.a.to(ORIGIN, vlerp(ORIGIN, c.P, p1), p1 > 0 ? 1 : 0);
+        c.a.g.setAttribute('class', 'arr ' + (i === 0 && p2 > 0.5 ? 'c-ink' : 'c-soft'));
+        op(c.lb, p1);
+      });
+      fin.to(ORIGIN, PX(F));
+      op(hS, p1 * (1 - p2)); op(hP, p2); op(zl, 1 - p2);
+      rows.forEach((r, i) => {
+        const w0 = Math.abs(r.score) * SS * p1, x0 = r.score >= 0 ? Z : Z - w0;
+        const w1 = r.prob * PS;
+        const x = lerp(x0, PB, p2), w = lerp(w0, w1, p2);
+        r.r.setAttribute('x', x.toFixed(1)); r.r.setAttribute('width', Math.max(0, w).toFixed(1));
+        r.r.setAttribute('class', p2 > 0.5 ? (i === 0 ? 'f-ink' : 'f-soft') : 'f-soft');
+        if (p2 > 0.5) { r.v.textContent = Math.round(r.prob * 100) + '%'; r.v.setAttribute('x', (x + w + 6).toFixed(1)); r.v.setAttribute('text-anchor', 'start'); }
+        else {
+          r.v.textContent = signed(r.score);
+          if (r.score >= 0) { r.v.setAttribute('x', (x + w + 6).toFixed(1)); r.v.setAttribute('text-anchor', 'start'); }
+          else { r.v.setAttribute('x', (x - 6).toFixed(1)); r.v.setAttribute('text-anchor', 'end'); }
+        }
+        op(r.v, p2 > 0.5 ? p2 : p1);
+      });
+      op(oLb, p2); op(oR, p2); op(oV, p2);
+    }
+  });
+})();
+
+/* ---------- 8. LoRA ---------- */
+(() => {
+  const svg = $('#svg-lora');
+  const RS = [4, 8, 16, 32, 64, 128, 256];
+  const X0 = 10, Y0 = 30, SZ = 200;
+  label(svg, X0, 18, 'q_proj WEIGHT · FROZEN', 'lab');
+  el('rect', { x: X0, y: Y0, width: SZ, height: SZ, rx: 3, class: 'panelbg' }, svg);
+  label(svg, X0 + SZ / 2, Y0 + SZ / 2 - 4, '3,072 × 3,072', 'lb', 'middle');
+  label(svg, X0 + SZ / 2, Y0 + SZ / 2 + 14, '9,437,184 numbers', 'mn soft', 'middle');
+  const bLb = label(svg, 224, 18, 'B', 'lb tadd');
+  const B = el('rect', { x: 224, y: Y0, height: SZ, rx: 1, class: 'f-add' }, svg);
+  const A = el('rect', { x: X0, y: Y0 + SZ + 14, width: SZ, rx: 1, class: 'f-add' }, svg);
+  const aLb = label(svg, X0, 0, 'A', 'lb tadd');
+  const rIn = $('#lora-r'), rOut = $('#lora-r-out'), big = $('#lora-big'), layer = $('#lora-layer'), runP = $('#lora-run');
+  const TOTAL = 3212749824;
+  function draw() {
+    const r = RS[+rIn.value];
+    const w = Math.max(1, r / 3072 * SZ);
+    rOut.textContent = String(r);
+    B.setAttribute('width', w.toFixed(2));
+    A.setAttribute('height', w.toFixed(2));
+    bLb.setAttribute('x', (224 + w / 2).toFixed(1)); bLb.setAttribute('text-anchor', 'middle');
+    aLb.setAttribute('y', (Y0 + SZ + 14 + w + 15).toFixed(1));
+    const strip = r * (3072 + 3072);
+    big.textContent = fmt(strip) + ' numbers learn';
+    layer.textContent = 'On this layer: strip A is ' + r + ' × 3,072 and strip B is 3,072 × ' + r + ', together ' + (strip / 9437184 * 100).toFixed(strip / 9437184 < 0.01 ? 2 : 1) + '% of the frozen square.';
+    const run = r * 28 * (6144 + 4096 + 4096 + 6144);
+    runP.textContent = 'Strips on q_proj, k_proj, v_proj and o_proj in all 28 layers: ' + fmt(run) + ' numbers, ' + (run / TOTAL * 100).toFixed(2) + '% of the model.' + (r === 32 ? ' That is the course’s lite run.' : '');
+  }
+  rIn.addEventListener('input', draw);
+  draw();
+})();
+
+/* ---------- chapter bar ---------- */
+(() => {
+  const links = $$('.chapnav a');
+  const map = new Map(links.map(a => [a.dataset.sec, a]));
+  const secs = $$('section.ch').filter(s => map.has(s.id));
+  if (!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      links.forEach(a => a.removeAttribute('aria-current'));
+      const a = map.get(e.target.id); if (a) a.setAttribute('aria-current', 'true');
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  secs.forEach(s => io.observe(s));
+})();
+})();
+</script>
+</body>
+</html>
